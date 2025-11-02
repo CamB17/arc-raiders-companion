@@ -223,86 +223,274 @@ const ItemDetail = () => {
                 )}
                 
                 {/* Stats */}
-                <div className="space-y-3 mb-6">
-                  {stackSize && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Stack Size</span>
-                      <span className="text-navy-800 font-bold">{stackSize}</span>
-                    </div>
-                  )}
-                  
-                  {stats.healingPerSecond && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Healing/Second</span>
-                      <span className="text-navy-800 font-bold">{stats.healingPerSecond}hp/s</span>
-                    </div>
-                  )}
-                  
-                  {stats.staminaPerSecond && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Stamina/Second</span>
-                      <span className="text-navy-800 font-bold">{stats.staminaPerSecond}</span>
-                    </div>
-                  )}
-                  
-                  {stats.useTime && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Use Time</span>
-                      <span className="text-navy-800 font-bold">{stats.useTime}s</span>
-                    </div>
-                  )}
-                  
-                  {stats.duration && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Duration</span>
-                      <span className="text-navy-800 font-bold">{stats.duration}s</span>
-                    </div>
-                  )}
-                  
-                  {stats.damage && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Damage</span>
-                      <span className="text-navy-800 font-bold">{stats.damage}</span>
-                    </div>
-                  )}
-                  
-                  {stats.fireRate && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Fire Rate</span>
-                      <span className="text-navy-800 font-bold">{stats.fireRate} RPM</span>
-                    </div>
-                  )}
-                  
-                  {stats.magazineSize && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Magazine</span>
-                      <span className="text-navy-800 font-bold">{stats.magazineSize}</span>
-                    </div>
-                  )}
-                  
-                  {stats.range && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Range</span>
-                      <span className="text-navy-800 font-bold">{stats.range}m</span>
-                    </div>
-                  )}
+                <div className="mb-6">
+                  {(() => {
+                    // Helper function to check if a value is meaningful (not 0, null, undefined, or empty)
+                    const hasValue = (val: any): boolean => {
+                      if (val === null || val === undefined) return false
+                      if (typeof val === 'string') {
+                        const trimmed = val.trim()
+                        if (trimmed === '' || /^0+$/.test(trimmed)) return false
+                        if (isNaN(parseFloat(trimmed))) return trimmed !== ''
+                        const num = parseFloat(trimmed)
+                        return !isNaN(num) && num !== 0
+                      }
+                      if (typeof val === 'number') {
+                        return !isNaN(val) && val !== 0
+                      }
+                      return false
+                    }
+                    
+                    // Helper to get numeric value
+                    const getNumericValue = (val: any): number => {
+                      if (typeof val === 'number') return val
+                      if (typeof val === 'string') {
+                        const parsed = parseFloat(val)
+                        return isNaN(parsed) ? 0 : parsed
+                      }
+                      return 0
+                    }
+                    
+                    // Check if item is a weapon
+                    const isWeapon = itemType?.toLowerCase().includes('weapon') || item.category?.toLowerCase() === 'weapon'
+                    
+                    // Get weapon-specific stats
+                    const ammoType = stats.ammoType || stats.ammo_type || stats.ammunition_type || item.ammoType || item.ammo_type
+                    const armorPenetration = stats.armorPenetration || stats.armor_penetration || stats.arcArmorPenetration || stats.arc_armor_penetration || stats.arcArmorPen || stats.arc_armor_pen
+                    const stability = stats.stability
+                    const agility = stats.agility
+                    const stealth = stats.stealth
+                    const magazineSize = stats.magazineSize || stats.magazine_size
+                    const damage = stats.damage
+                    const fireRate = stats.fireRate
+                    const range = stats.range
+                    
+                    // Define max values for percentage calculation (adjust based on typical game ranges)
+                    const maxValues: Record<string, number> = {
+                      damage: 100,
+                      fireRate: 1000,
+                      range: 100,
+                      stability: 100,
+                      agility: 100,
+                      stealth: 100,
+                      magazineSize: 100,
+                    }
+                    
+                    // Stat bar component
+                    const StatBar = ({ label, value, maxValue, suffix = '', showValue = true }: {
+                      label: string
+                      value: number
+                      maxValue: number
+                      suffix?: string
+                      showValue?: boolean
+                    }) => {
+                      const percentage = Math.min((value / maxValue) * 100, 100)
+                      
+                      return (
+                        <div className="mb-3">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-medium text-navy-600">{label}</span>
+                            {showValue && (
+                              <span className="text-xs font-bold text-navy-800">
+                                {value}{suffix}
+                              </span>
+                            )}
+                          </div>
+                          <div className="w-full h-2 bg-primary-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-accent-500 to-accent-600 rounded-full transition-all duration-300"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    if (isWeapon) {
+                      // Weapon stats with graph bars
+                      return (
+                        <div className="space-y-4">
+                          {/* Non-numeric weapon stats */}
+                          {(ammoType || armorPenetration) && (
+                            <div className="space-y-2 pb-3 border-b border-primary-200">
+                              {ammoType && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-navy-600">Ammo Type</span>
+                                  <span className="text-navy-800 font-bold">{ammoType}</span>
+                                </div>
+                              )}
+                              {armorPenetration && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-navy-600">ARC Armor Penetration</span>
+                                  <span className="text-navy-800 font-bold">{armorPenetration}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Numeric weapon stats with bars */}
+                          <div className="space-y-1">
+                            {hasValue(damage) && (
+                              <StatBar
+                                label="Damage"
+                                value={getNumericValue(damage)}
+                                maxValue={maxValues.damage}
+                              />
+                            )}
+                            {hasValue(fireRate) && (
+                              <StatBar
+                                label="Fire Rate"
+                                value={getNumericValue(fireRate)}
+                                maxValue={maxValues.fireRate}
+                                suffix=" RPM"
+                              />
+                            )}
+                            {hasValue(range) && (
+                              <StatBar
+                                label="Range"
+                                value={getNumericValue(range)}
+                                maxValue={maxValues.range}
+                              />
+                            )}
+                            {hasValue(magazineSize) && (
+                              <StatBar
+                                label="Magazine Size"
+                                value={getNumericValue(magazineSize)}
+                                maxValue={maxValues.magazineSize}
+                              />
+                            )}
+                            {hasValue(stability) && (
+                              <StatBar
+                                label="Stability"
+                                value={getNumericValue(stability)}
+                                maxValue={maxValues.stability}
+                              />
+                            )}
+                            {hasValue(agility) && (
+                              <StatBar
+                                label="Agility"
+                                value={getNumericValue(agility)}
+                                maxValue={maxValues.agility}
+                              />
+                            )}
+                            {hasValue(stealth) && (
+                              <StatBar
+                                label="Stealth"
+                                value={getNumericValue(stealth)}
+                                maxValue={maxValues.stealth}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )
+                    } else {
+                      // Non-weapon stats (keep original format)
+                      return (
+                        <div className="space-y-3">
+                          {hasValue(stackSize) && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-navy-600">Stack Size</span>
+                              <span className="text-navy-800 font-bold">
+                                {typeof stackSize === 'number' ? stackSize : parseFloat(stackSize) || stackSize}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {hasValue(stats.healingPerSecond) && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-navy-600">Healing/Second</span>
+                              <span className="text-navy-800 font-bold">
+                                {typeof stats.healingPerSecond === 'number' 
+                                  ? stats.healingPerSecond 
+                                  : parseFloat(stats.healingPerSecond) || stats.healingPerSecond}
+                                hp/s
+                              </span>
+                            </div>
+                          )}
+                          
+                          {hasValue(stats.staminaPerSecond) && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-navy-600">Stamina/Second</span>
+                              <span className="text-navy-800 font-bold">
+                                {typeof stats.staminaPerSecond === 'number' 
+                                  ? stats.staminaPerSecond 
+                                  : parseFloat(stats.staminaPerSecond) || stats.staminaPerSecond}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {hasValue(stats.useTime) && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-navy-600">Use Time</span>
+                              <span className="text-navy-800 font-bold">
+                                {typeof stats.useTime === 'number' 
+                                  ? stats.useTime 
+                                  : parseFloat(stats.useTime) || stats.useTime}
+                                s
+                              </span>
+                            </div>
+                          )}
+                          
+                          {hasValue(stats.duration) && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-navy-600">Duration</span>
+                              <span className="text-navy-800 font-bold">
+                                {typeof stats.duration === 'number' 
+                                  ? stats.duration 
+                                  : parseFloat(stats.duration) || stats.duration}
+                                s
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+                  })()}
                 </div>
                 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-4 border-t border-primary-200">
-                  {weight && (
-                    <div className="flex items-center gap-2">
-                      <Weight className="w-5 h-5 text-navy-800" />
-                      <span className="text-navy-800 font-bold">{weight} KG</span>
-                    </div>
-                  )}
-                  
-                  {recycleValue && (
-                    <div className="flex items-center gap-2">
-                      <Coins className="w-5 h-5 text-navy-800" />
-                      <span className="text-navy-800 font-bold">{recycleValue}</span>
-                    </div>
-                  )}
+                  {(() => {
+                    // Helper function to check if a value is meaningful (not 0, null, undefined, or empty)
+                    const hasValue = (val: any): boolean => {
+                      if (val === null || val === undefined) return false
+                      if (typeof val === 'string') {
+                        const trimmed = val.trim()
+                        // Check for strings like "0", "000", "00000", etc.
+                        if (trimmed === '' || /^0+$/.test(trimmed)) return false
+                        const num = parseFloat(trimmed)
+                        return !isNaN(num) && num !== 0
+                      }
+                      if (typeof val === 'number') {
+                        return !isNaN(val) && val !== 0
+                      }
+                      return false
+                    }
+                    
+                    return (
+                      <>
+                        {hasValue(weight) && (
+                          <div className="flex items-center gap-2">
+                            <Weight className="w-5 h-5 text-navy-800" />
+                            <span className="text-navy-800 font-bold">
+                              {typeof weight === 'number' ? weight : parseFloat(weight) || weight} KG
+                            </span>
+                          </div>
+                        )}
+                        
+                        {hasValue(recycleValue) && (
+                          <div className="flex items-center gap-2">
+                            <Coins className="w-5 h-5 text-navy-800" />
+                            <span className="text-navy-800 font-bold">
+                              {typeof recycleValue === 'number' 
+                                ? recycleValue 
+                                : parseFloat(recycleValue) || recycleValue}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
@@ -310,6 +498,126 @@ const ItemDetail = () => {
           
           {/* Right Column - Details */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Weapon Variants */}
+            {(() => {
+              const isWeapon = itemType?.toLowerCase().includes('weapon') || item.category?.toLowerCase() === 'weapon'
+              const variants = item.variants || item.weapon_variants || item.variations || []
+              
+              if (isWeapon && variants && variants.length > 0) {
+                return (
+                  <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
+                    <h2 className="text-xl font-techno font-bold text-navy-800 mb-4">
+                      Variants
+                    </h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {variants.map((variant: any, index: number) => {
+                        const variantId = variant.id || variant.item_id || variant
+                        const variantName = variant.name || variant
+                        const variantImage = variant.icon || variant.image || variant.imageUrl || variant.thumbnail
+                        const variantRarity = variant.rarity
+                        
+                        return (
+                          <Link
+                            key={index}
+                            to={`/items/${variantId}`}
+                            className="group flex flex-col items-center p-4 rounded-lg border border-primary-200 hover:border-accent-400 hover:bg-primary-50 transition-all"
+                          >
+                            {variantImage ? (
+                              <img 
+                                src={variantImage} 
+                                alt={variantName}
+                                className="w-16 h-16 object-contain mb-2 opacity-80 group-hover:opacity-100 transition-opacity"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                  e.currentTarget.parentElement?.querySelector('.variant-fallback')?.classList.remove('hidden')
+                                }}
+                              />
+                            ) : null}
+                            <div className={`variant-fallback w-16 h-16 bg-primary-100 rounded flex items-center justify-center mb-2 ${variantImage ? 'hidden' : ''}`}>
+                              <span className="text-2xl font-techno text-navy-600">
+                                {variantName?.charAt(0) || '?'}
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium text-navy-800 group-hover:text-accent-600 transition-colors text-center">
+                              {variantName}
+                            </span>
+                            {variantRarity && (
+                              <span className={`mt-1 px-2 py-0.5 text-xs font-bold rounded ${getRarityColor(variantRarity)}`}>
+                                {variantRarity}
+                              </span>
+                            )}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              }
+              return null
+            })()}
+            
+            {/* Blueprint */}
+            {(() => {
+              const isWeapon = itemType?.toLowerCase().includes('weapon') || item.category?.toLowerCase() === 'weapon'
+              const blueprint = item.blueprint || item.weapon_blueprint || item.blueprint_item
+              
+              if (isWeapon && blueprint) {
+                const blueprintId = typeof blueprint === 'string' ? blueprint : (blueprint.id || blueprint.item_id || blueprint.name)
+                const blueprintName = typeof blueprint === 'string' ? blueprint : (blueprint.name || blueprint.item || 'Blueprint')
+                const blueprintImage = typeof blueprint === 'object' ? (blueprint.icon || blueprint.image || blueprint.imageUrl || blueprint.thumbnail) : null
+                
+                return (
+                  <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
+                    <h2 className="text-xl font-techno font-bold text-navy-800 mb-4">
+                      Blueprint
+                    </h2>
+                    <Link
+                      to={`/items/${blueprintId}`}
+                      className="flex items-center gap-4 p-4 rounded-lg border border-primary-200 hover:border-accent-400 hover:bg-primary-50 transition-all group"
+                      onMouseEnter={(e) => {
+                        if (blueprintId) {
+                          setHoveredItemId(blueprintId)
+                          setHoverPosition({ x: e.clientX, y: e.clientY })
+                        }
+                      }}
+                      onMouseLeave={() => setHoveredItemId(null)}
+                      onMouseMove={(e) => {
+                        if (hoveredItemId === blueprintId) {
+                          setHoverPosition({ x: e.clientX, y: e.clientY })
+                        }
+                      }}
+                    >
+                      {blueprintImage ? (
+                        <img 
+                          src={blueprintImage} 
+                          alt={blueprintName}
+                          className="w-16 h-16 object-contain flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            e.currentTarget.parentElement?.querySelector('.blueprint-fallback')?.classList.remove('hidden')
+                          }}
+                        />
+                      ) : null}
+                      <div className={`blueprint-fallback w-16 h-16 bg-primary-100 rounded flex items-center justify-center flex-shrink-0 ${blueprintImage ? 'hidden' : ''}`}>
+                        <span className="text-2xl font-techno text-navy-600">
+                          {blueprintName?.charAt(0) || '?'}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-navy-800 group-hover:text-accent-600 transition-colors">
+                          {blueprintName}
+                        </h3>
+                        {typeof blueprint === 'object' && blueprint.description && (
+                          <p className="text-sm text-navy-600 mt-1">{blueprint.description}</p>
+                        )}
+                      </div>
+                    </Link>
+                  </div>
+                )
+              }
+              return null
+            })()}
+            
             {/* Needed to Craft */}
             {neededToCraft.length > 0 && (
               <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
