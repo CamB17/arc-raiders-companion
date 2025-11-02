@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { useMissions } from '../hooks/useArcRaidersApi'
-import { Target, Award, MapPin, Clock, Users, Star, Tag, Package, ArrowRight } from 'lucide-react'
-import type { ArcRaidersMission } from '../hooks/useArcRaidersApi'
+import { useQuests } from '../hooks/useArcRaidersApi'
+import { Target, Award, MapPin, Clock, Users, Star, Tag, Package, ArrowRight, Link2 } from 'lucide-react'
+import type { ArcRaidersQuest } from '../hooks/useArcRaidersApi'
 
 const getDifficultyColor = (difficulty?: string) => {
   const colors: Record<string, string> = {
@@ -17,11 +17,11 @@ const getDifficultyColor = (difficulty?: string) => {
 
 const getTypeColor = (type?: string) => {
   const colors: Record<string, string> = {
-    retrieval: 'bg-blue-500 text-white',
-    elimination: 'bg-red-500 text-white',
-    escort: 'bg-yellow-500 text-white',
+    tutorial: 'bg-green-500 text-white',
+    hunt: 'bg-red-500 text-white',
     exploration: 'bg-purple-500 text-white',
-    raid: 'bg-orange-500 text-white',
+    story: 'bg-indigo-500 text-white',
+    side: 'bg-yellow-500 text-white',
   }
   
   return colors[type?.toLowerCase() || ''] || 'bg-navy-500 text-white'
@@ -39,16 +39,16 @@ const formatDuration = (seconds?: number) => {
   return `${minutes}m`
 }
 
-const Missions = () => {
-  const { data: response, isLoading, error } = useMissions()
-  const missions = response?.data || []
+const Quests = () => {
+  const { data: response, isLoading, error } = useQuests()
+  const quests = response?.data || []
   
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Missions</h2>
-          <p className="text-red-600">Unable to fetch missions from the API. Please try again later.</p>
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Quests</h2>
+          <p className="text-red-600">Unable to fetch quests from the API. Please try again later.</p>
         </div>
       </div>
     )
@@ -62,21 +62,21 @@ const Missions = () => {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h1 className="text-4xl font-techno font-bold text-navy-800 mb-3">
-                MISSIONS
+                QUESTS
               </h1>
               <p className="text-navy-600">
-                View all available missions with detailed objectives, rewards, and requirements
+                View all available quests with detailed objectives, rewards, and quest chain information
               </p>
               {response?.pagination && (
                 <p className="text-sm text-navy-500 mt-2">
-                  Showing {missions.length} of {response.pagination.total} missions
+                  Showing {quests.length} of {response.pagination.total} quests
                 </p>
               )}
             </div>
           </div>
         </div>
         
-        {/* Missions List */}
+        {/* Quests List */}
         {isLoading ? (
           <div className="space-y-6">
             {[...Array(3)].map((_, i) => (
@@ -87,26 +87,26 @@ const Missions = () => {
               </div>
             ))}
           </div>
-        ) : missions && missions.length > 0 ? (
+        ) : quests && quests.length > 0 ? (
           <div className="space-y-6">
-            {missions.map((mission: ArcRaidersMission) => {
-              const missionImage = mission.image || mission.imageUrl || mission.icon || mission.thumbnail
+            {quests.map((quest: ArcRaidersQuest) => {
+              const questImage = quest.image || quest.imageUrl || quest.icon || quest.thumbnail
               
               return (
                 <Link
-                  key={mission.id}
-                  to={`/missions/${mission.id}`}
+                  key={quest.id}
+                  to={`/quests/${quest.id}`}
                   className="block"
                 >
                   <div className="bg-white rounded-xl border border-primary-200 hover:border-accent-400 p-8 transition-all hover:shadow-lg group">
                     <div className="flex items-start gap-6 mb-6">
-                      {/* Mission Image/Icon */}
+                      {/* Quest Image/Icon */}
                       <div className="flex-shrink-0">
-                        {missionImage ? (
-                          <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center overflow-hidden">
+                        {questImage ? (
+                          <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center overflow-hidden">
                             <img 
-                              src={missionImage} 
-                              alt={mission.name}
+                              src={questImage} 
+                              alt={quest.name}
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.currentTarget.style.display = 'none'
@@ -118,29 +118,42 @@ const Missions = () => {
                             </div>
                           </div>
                         ) : (
-                          <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center">
+                          <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center">
                             <Target className="w-12 h-12 text-white" />
                           </div>
                         )}
                       </div>
                       
-                      {/* Mission Info */}
+                      {/* Quest Info */}
                       <div className="flex-1">
                         {/* Header with badges */}
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
-                            <h3 className="text-2xl font-techno font-bold text-navy-800 mb-2 group-hover:text-accent-600 transition-colors">
-                              {mission.name}
-                            </h3>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {mission.type && (
-                                <span className={`px-3 py-1 text-xs font-bold rounded ${getTypeColor(mission.type)}`}>
-                                  {mission.type}
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="text-2xl font-techno font-bold text-navy-800 group-hover:text-accent-600 transition-colors">
+                                {quest.name}
+                              </h3>
+                              {quest.quest_chain && (
+                                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium flex items-center gap-1">
+                                  <Link2 className="w-3 h-3" />
+                                  Chain: {quest.quest_chain}
                                 </span>
                               )}
-                              {mission.difficulty && (
-                                <span className={`px-3 py-1 text-xs font-bold rounded ${getDifficultyColor(mission.difficulty)}`}>
-                                  {mission.difficulty}
+                              {quest.chain_position && (
+                                <span className="px-2 py-1 bg-navy-100 text-navy-700 rounded text-xs font-medium">
+                                  #{quest.chain_position}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {quest.type && (
+                                <span className={`px-3 py-1 text-xs font-bold rounded ${getTypeColor(quest.type)}`}>
+                                  {quest.type}
+                                </span>
+                              )}
+                              {quest.difficulty && (
+                                <span className={`px-3 py-1 text-xs font-bold rounded ${getDifficultyColor(quest.difficulty)}`}>
+                                  {quest.difficulty}
                                 </span>
                               )}
                             </div>
@@ -148,53 +161,53 @@ const Missions = () => {
                           <ArrowRight className="w-5 h-5 text-navy-400 group-hover:text-accent-600 transition-colors flex-shrink-0 mt-1" />
                         </div>
                         
-                        {mission.description && (
+                        {quest.description && (
                           <p className="text-navy-600 leading-relaxed mb-4">
-                            {mission.description}
+                            {quest.description}
                           </p>
                         )}
                         
-                        {/* Mission Metadata Grid */}
+                        {/* Quest Metadata Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                          {mission.region && (
+                          {quest.region && (
                             <div className="flex items-center gap-2 text-sm text-navy-600">
                               <MapPin className="w-4 h-4" />
-                              <span>{mission.region}</span>
+                              <span>{quest.region}</span>
                             </div>
                           )}
-                          {mission.duration && (
+                          {quest.duration && (
                             <div className="flex items-center gap-2 text-sm text-navy-600">
                               <Clock className="w-4 h-4" />
-                              <span>{formatDuration(mission.duration)}</span>
+                              <span>{formatDuration(quest.duration)}</span>
                             </div>
                           )}
-                          {(mission.min_players || mission.max_players) && (
+                          {(quest.min_players || quest.max_players) && (
                             <div className="flex items-center gap-2 text-sm text-navy-600">
                               <Users className="w-4 h-4" />
                               <span>
-                                {mission.min_players || 1}-{mission.max_players || 4} players
+                                {quest.min_players || 1}-{quest.max_players || 4} players
                               </span>
                             </div>
                           )}
-                          {mission.recommended_level && (
+                          {quest.recommended_level && (
                             <div className="flex items-center gap-2 text-sm text-navy-600">
                               <Star className="w-4 h-4" />
-                              <span>Lv {mission.recommended_level}</span>
+                              <span>Lv {quest.recommended_level}</span>
                             </div>
                           )}
                         </div>
                         
-                        {mission.location && (
+                        {quest.location && (
                           <div className="text-sm text-navy-500 mb-4">
                             <span className="font-medium">Location: </span>
-                            {mission.location}
+                            {quest.location}
                           </div>
                         )}
                         
                         {/* Tags */}
-                        {mission.tags && mission.tags.length > 0 && (
+                        {quest.tags && quest.tags.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-4">
-                            {mission.tags.map((tag, index) => (
+                            {quest.tags.map((tag, index) => (
                               <span 
                                 key={index}
                                 className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium flex items-center gap-1"
@@ -210,14 +223,14 @@ const Missions = () => {
                     
                     <div className="grid md:grid-cols-2 gap-6">
                       {/* Objectives */}
-                      {mission.objectives && mission.objectives.length > 0 && (
+                      {quest.objectives && quest.objectives.length > 0 && (
                         <div>
                           <h4 className="text-lg font-semibold text-navy-800 mb-3 flex items-center gap-2">
                             <Target className="w-5 h-5 text-accent-600" />
                             Objectives
                           </h4>
                           <ul className="space-y-2">
-                            {mission.objectives.map((objective: any, index: number) => {
+                            {quest.objectives.map((objective: any, index: number) => {
                               const isString = typeof objective === 'string'
                               const objName = isString ? objective : (objective.name || objective.description || 'Objective')
                               const objType = !isString ? objective.type : undefined
@@ -250,14 +263,14 @@ const Missions = () => {
                       )}
                       
                       {/* Rewards */}
-                      {mission.rewards && mission.rewards.length > 0 && (
+                      {quest.rewards && quest.rewards.length > 0 && (
                         <div>
                           <h4 className="text-lg font-semibold text-navy-800 mb-3 flex items-center gap-2">
                             <Award className="w-5 h-5 text-accent-600" />
                             Rewards
                           </h4>
                           <div className="space-y-2">
-                            {mission.rewards.map((reward: any, index: number) => {
+                            {quest.rewards.map((reward: any, index: number) => {
                               const isString = typeof reward === 'string'
                               // Try multiple field names for reward name - ensure it's always a string
                               let rewardName: string = 'Reward'
@@ -342,29 +355,62 @@ const Missions = () => {
                       )}
                     </div>
                     
+                    {/* Quest Chain Info */}
+                    {(quest.previous_quest || quest.next_quest || quest.quest_chain) && (
+                      <div className="mt-6 pt-6 border-t border-primary-200">
+                        <h4 className="text-sm font-semibold text-navy-700 mb-3 uppercase">Quest Chain</h4>
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          {quest.previous_quest && (
+                            <div className="flex items-center gap-2 text-navy-600">
+                              <ArrowRight className="w-4 h-4 rotate-180" />
+                              <Link 
+                                to={`/quests/${quest.previous_quest}`}
+                                className="hover:text-accent-600 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Previous Quest
+                              </Link>
+                            </div>
+                          )}
+                          {quest.next_quest && (
+                            <div className="flex items-center gap-2 text-navy-600">
+                              <Link 
+                                to={`/quests/${quest.next_quest}`}
+                                className="hover:text-accent-600 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Next Quest
+                              </Link>
+                              <ArrowRight className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Requirements */}
-                    {(mission.prerequisites && mission.prerequisites.length > 0) || 
-                     (mission.requires_items && mission.requires_items.length > 0) || 
-                     mission.required_level ? (
+                    {(quest.prerequisites && quest.prerequisites.length > 0) || 
+                     (quest.requires_items && quest.requires_items.length > 0) || 
+                     quest.required_level ? (
                       <div className="mt-6 pt-6 border-t border-primary-200">
                         <h4 className="text-sm font-semibold text-navy-700 mb-3 uppercase">Requirements</h4>
                         <div className="flex flex-wrap gap-4 text-sm">
-                          {mission.required_level && (
+                          {quest.required_level && (
                             <div className="flex items-center gap-2 text-navy-600">
                               <Star className="w-4 h-4" />
-                              <span>Level {mission.required_level} required</span>
+                              <span>Level {quest.required_level} required</span>
                             </div>
                           )}
-                          {mission.prerequisites && mission.prerequisites.length > 0 && (
+                          {quest.prerequisites && quest.prerequisites.length > 0 && (
                             <div className="flex items-center gap-2 text-navy-600">
                               <Target className="w-4 h-4" />
-                              <span>{mission.prerequisites.length} prerequisite mission{mission.prerequisites.length > 1 ? 's' : ''}</span>
+                              <span>{quest.prerequisites.length} prerequisite quest{quest.prerequisites.length > 1 ? 's' : ''}</span>
                             </div>
                           )}
-                          {mission.requires_items && mission.requires_items.length > 0 && (
+                          {quest.requires_items && quest.requires_items.length > 0 && (
                             <div className="flex items-center gap-2 text-navy-600">
                               <Package className="w-4 h-4" />
-                              <span>{mission.requires_items.length} required item{mission.requires_items.length > 1 ? 's' : ''}</span>
+                              <span>{quest.requires_items.length} required item{quest.requires_items.length > 1 ? 's' : ''}</span>
                             </div>
                           )}
                         </div>
@@ -380,7 +426,7 @@ const Missions = () => {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-200 rounded-full mb-4">
               <Target className="w-8 h-8 text-navy-600" />
             </div>
-            <p className="text-navy-500 text-lg">No missions available at this time.</p>
+            <p className="text-navy-500 text-lg">No quests available at this time.</p>
           </div>
         )}
       </div>
@@ -388,5 +434,5 @@ const Missions = () => {
   )
 }
 
-export default Missions
+export default Quests
 

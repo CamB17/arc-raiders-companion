@@ -4,6 +4,9 @@ import Home from './pages/Home'
 import Items from './pages/Items'
 import ItemDetail from './pages/ItemDetail'
 import Missions from './pages/Missions'
+import MissionDetail from './pages/MissionDetail'
+import Quests from './pages/Quests'
+import QuestDetail from './pages/QuestDetail'
 import Crafting from './pages/Crafting'
 import Enemies from './pages/Enemies'
 import EnemyDetail from './pages/EnemyDetail'
@@ -16,6 +19,9 @@ function App() {
         <Route path="/items" element={<Items />} />
         <Route path="/items/:id" element={<ItemDetail />} />
         <Route path="/missions" element={<Missions />} />
+        <Route path="/missions/:id" element={<MissionDetail />} />
+        <Route path="/quests" element={<Quests />} />
+        <Route path="/quests/:id" element={<QuestDetail />} />
         <Route path="/crafting" element={<Crafting />} />
         <Route path="/enemies" element={<Enemies />} />
         <Route path="/enemies/:id" element={<EnemyDetail />} />
