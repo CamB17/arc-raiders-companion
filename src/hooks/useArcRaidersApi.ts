@@ -156,89 +156,6 @@ export interface ItemsQueryParams {
   minimal?: boolean
 }
 
-export interface ArcRaidersMission {
-  id: string
-  name: string
-  description?: string
-  
-  // Mission metadata
-  type?: string
-  difficulty?: string
-  region?: string
-  location?: string
-  category?: string
-  
-  // Map coordinates (if provided by API)
-  map_x?: number
-  map_y?: number
-  map_x_percent?: number
-  map_y_percent?: number
-  x?: number
-  y?: number
-  
-  // Images
-  icon?: string
-  image?: string
-  imageUrl?: string
-  thumbnail?: string
-  
-  // Objectives - can be strings or detailed objects
-  objectives?: Array<string | {
-    id?: string
-    name?: string
-    description?: string
-    type?: string
-    target?: string | number
-    current?: number
-    completed?: boolean
-    [key: string]: any
-  }>
-  
-  // Rewards - can be strings or detailed objects
-  rewards?: Array<string | {
-    id?: string
-    name?: string
-    type?: string
-    item_id?: string
-    item?: string
-    quantity?: number
-    value?: number
-    rarity?: string
-    icon?: string
-    image?: string
-    [key: string]: any
-  }>
-  
-  // Mission stats
-  duration?: number
-  recommended_level?: number
-  required_level?: number
-  max_players?: number
-  min_players?: number
-  
-  // Progress/tracking
-  completed?: boolean
-  progress?: number
-  unlocks?: string[] // Mission IDs that unlock after completion
-  
-  // Mission requirements
-  prerequisites?: string[] // Mission IDs that must be completed first
-  requires_items?: Array<{
-    item_id?: string
-    item?: string
-    name?: string
-    quantity?: number
-    [key: string]: any
-  }>
-  
-  // Additional metadata
-  tags?: string[]
-  notes?: string
-  guide?: string
-  
-  [key: string]: any
-}
-
 export interface ArcRaidersQuest {
   id: string
   name: string
@@ -319,6 +236,29 @@ export interface ArcRaidersQuest {
   chain_position?: number
   previous_quest?: string
   next_quest?: string
+  
+  // Quest giver/trader
+  trader?: {
+    name?: string
+    avatar?: string
+    image?: string
+    icon?: string
+    [key: string]: any
+  }
+  giver?: {
+    name?: string
+    avatar?: string
+    image?: string
+    icon?: string
+    [key: string]: any
+  }
+  provider?: {
+    name?: string
+    avatar?: string
+    image?: string
+    icon?: string
+    [key: string]: any
+  }
   
   // Additional metadata
   tags?: string[]
@@ -417,160 +357,11 @@ export const useArcRaidersData = <T = any>(
         throw new Error('No data received')
       } catch (error) {
         console.error(`✗ Failed to fetch from: ${BASE_URL}/${endpoint}`, error)
-        
-        // Return mock data for development
-        console.warn('⚠ API failed, returning mock data for development')
-        return getMockData(endpoint)
+        throw error
       }
     },
     ...options,
   })
-}
-
-/**
- * Mock data for development/testing when API is unavailable
- */
-function getMockData(endpoint: string): any {
-  const mockItems = [
-    {
-      id: 'herbal-bandage',
-      name: 'Herbal Bandage',
-      description: 'An improvised medical item that gradually restores health over time.',
-      rarity: 'Uncommon',
-      item_type: 'Quick Use',
-      icon: 'https://via.placeholder.com/200x200/22c55e/ffffff?text=Bandage',
-      value: 450,
-      stat_block: {
-        weight: 0.15,
-        stackSize: 5,
-        healingPerSecond: 3.5,
-        useTime: 1.5,
-        duration: 10,
-      },
-      components: [
-        { id: 'durable-cloth', name: 'Durable Cloth', quantity: 1, item_type: 'Refined Material', icon: 'https://via.placeholder.com/100x100/94a3b8/ffffff?text=Cloth' },
-        { id: 'great-mullein', name: 'Great Mullein', quantity: 1, item_type: 'Nature', icon: 'https://via.placeholder.com/100x100/84cc16/ffffff?text=Herb' },
-      ],
-      loot_source: [
-        { arc_id: 'arc-titan', name: 'Arc Titan', drop_rate: 0.5 },
-      ],
-    },
-    {
-      id: 'adrenaline-shot',
-      name: 'Adrenaline Shot',
-      description: 'A serum that fully restores stamina and temporarily increases stamina regeneration.',
-      rarity: 'Common',
-      item_type: 'Quick Use',
-      icon: 'https://via.placeholder.com/200x200/3b82f6/ffffff?text=Adrenaline',
-      value: 300,
-      stat_block: {
-        weight: 0.2,
-        stackSize: 5,
-        staminaPerSecond: 5,
-        useTime: 1,
-        duration: 10,
-      },
-      dropped_by: [
-        { arc_id: 'arc-scout', name: 'Arc Scout', drop_rate: 0.15 },
-      ],
-    },
-    {
-      id: 'ak-47',
-      name: 'AK-47',
-      description: 'A reliable automatic rifle with excellent stopping power.',
-      rarity: 'Rare',
-      item_type: 'Weapon',
-      icon: 'https://via.placeholder.com/200x200/ef4444/ffffff?text=AK-47',
-      value: 2400,
-      stat_block: {
-        weight: 3.5,
-        stackSize: 1,
-        damage: 32,
-        fireRate: 600,
-        range: 300,
-        magazineSize: 30,
-      },
-      dropped_by: [
-        { arc_id: 'arc-titan', name: 'Arc Titan', drop_rate: 0.25 },
-      ],
-    },
-    {
-      id: 'scrap-metal',
-      name: 'Scrap Metal',
-      description: 'Salvaged metal that can be refined.',
-      rarity: 'Common',
-      item_type: 'Material',
-      icon: 'https://via.placeholder.com/200x200/64748b/ffffff?text=Metal',
-      value: 50,
-      stat_block: {
-        weight: 0.5,
-        stackSize: 100,
-      },
-      dropped_by: [
-        { arc_id: 'arc-scout', name: 'Arc Scout', drop_rate: 0.8 },
-        { arc_id: 'arc-walker', name: 'Arc Walker', drop_rate: 0.9 },
-        { arc_id: 'arc-titan', name: 'Arc Titan', drop_rate: 1.0 },
-      ],
-    },
-    {
-      id: 'red-dot-sight',
-      name: 'Red Dot Sight',
-      description: 'Improves weapon accuracy.',
-      rarity: 'Uncommon',
-      item_type: 'Add-on',
-      icon: 'https://via.placeholder.com/200x200/f97316/ffffff?text=Sight',
-      value: 380,
-      stat_block: {
-        weight: 0.3,
-        stackSize: 1,
-      },
-      dropped_by: [
-        { arc_id: 'arc-walker', name: 'Arc Walker', drop_rate: 0.1 },
-      ],
-    },
-    {
-      id: 'advanced-arc-powercell',
-      name: 'Advanced ARC Powercell',
-      description: 'Very valuable resource that drops from certain ARC enemies.',
-      rarity: 'Rare',
-      item_type: 'Misc',
-      icon: 'https://via.placeholder.com/200x200/8b5cf6/ffffff?text=Powercell',
-      raider_coins: 640,
-      value: 1280,
-      stat_block: {
-        weight: 0.5,
-        stackSize: 5,
-      },
-      recycle_components: [
-        { name: 'ARC Powercell', quantity: 2, value: 640 },
-      ],
-      dropped_by: [
-        { arc_id: 'arc-bombardier', name: 'Bombardier', drop_rate: 0.3 },
-      ],
-    },
-  ]
-  
-  if (endpoint === 'items') {
-    return {
-      data: mockItems,
-      pagination: {
-        page: 1,
-        limit: 50,
-        total: mockItems.length,
-        totalPages: 1,
-        hasNextPage: false,
-        hasPrevPage: false,
-      },
-    }
-  }
-  
-  // Individual item lookup - return matching item
-  const mockItemsMap: Record<string, any> = {}
-  mockItems.forEach(item => {
-    mockItemsMap[item.id] = item
-  })
-  
-  return mockItemsMap
 }
 
 /**
@@ -605,8 +396,7 @@ export const useItems = (params?: ItemsQueryParams) => {
         throw new Error('No data received')
       } catch (error) {
         console.error('✗ Failed to fetch items', error)
-        console.warn('⚠ Using mock data')
-        return getMockData('items') as PaginatedResponse<ArcRaidersItem>
+        throw error
       }
     },
   })
@@ -637,148 +427,7 @@ export const useItem = (id: string) => {
         throw new Error('Item not found')
       } catch (error) {
         console.error(`✗ Failed to fetch item: ${id}`, error)
-        console.warn('⚠ Using mock data')
-        const mockDataMap = getMockData('items-map')
-        return mockDataMap[id] || mockDataMap['herbal-bandage'] as ArcRaidersItem
-      }
-    },
-    enabled: !!id,
-  })
-}
-
-/**
- * Hook to fetch all missions with pagination and filtering
- */
-export const useMissions = (params?: {
-  page?: number
-  limit?: number
-  id?: string
-  type?: string
-  difficulty?: string
-  region?: string
-  search?: string
-  includeDetails?: boolean
-}) => {
-  const defaultParams = {
-    page: 1,
-    limit: 100,
-    includeDetails: true,
-    ...params,
-  }
-  
-  return useQuery<PaginatedResponse<ArcRaidersMission>>({
-    queryKey: ['arc-raiders', 'missions', defaultParams],
-    queryFn: async () => {
-      try {
-        const response = await axios.get(`${BASE_URL}/missions`, {
-          params: defaultParams,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          timeout: 15000,
-        })
-        
-        // Handle different response structures
-        if (response.data) {
-          // If response is already paginated
-          if (response.data.data && response.data.pagination) {
-            console.log(`✓ Successfully fetched ${response.data.data.length} missions`)
-            return response.data
-          }
-          // If response is an array
-          if (Array.isArray(response.data)) {
-            console.log(`✓ Successfully fetched ${response.data.length} missions`)
-            return {
-              data: response.data,
-              pagination: {
-                page: defaultParams.page || 1,
-                limit: defaultParams.limit || 100,
-                total: response.data.length,
-                totalPages: 1,
-                hasNextPage: false,
-                hasPrevPage: false,
-              },
-            }
-          }
-          // If response is a single object (when id is specified)
-          if (response.data.id) {
-            return {
-              data: [response.data],
-              pagination: {
-                page: 1,
-                limit: 1,
-                total: 1,
-                totalPages: 1,
-                hasNextPage: false,
-                hasPrevPage: false,
-              },
-            }
-          }
-        }
-        
-        throw new Error('No data received')
-      } catch (error) {
-        console.error('✗ Failed to fetch missions', error)
-        console.warn('⚠ Using mock data')
-        return getMockMissionsData(defaultParams)
-      }
-    },
-  })
-}
-
-/**
- * Hook to fetch a specific mission by ID
- */
-export const useMission = (id: string) => {
-  return useQuery<ArcRaidersMission>({
-    queryKey: ['arc-raiders', 'missions', id],
-    queryFn: async () => {
-      try {
-        const response = await axios.get(`${BASE_URL}/missions`, {
-          params: { 
-            id,
-            includeDetails: true,
-          },
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          timeout: 15000,
-        })
-        
-        // Handle different response structures
-        let missionData = null
-        
-        // Check if response.data is directly the mission object
-        if (response.data && !response.data.data && response.data.id) {
-          missionData = response.data
-        }
-        // Check if response.data.data is an array
-        else if (response.data?.data?.[0]) {
-          missionData = response.data.data[0]
-        }
-        // Check if response.data.data is the object itself
-        else if (response.data?.data && response.data.data.id) {
-          missionData = response.data.data
-        }
-        // Check if response.data is an array
-        else if (Array.isArray(response.data) && response.data.length > 0) {
-          missionData = response.data.find((m: any) => m.id === id) || response.data[0]
-        }
-        
-        if (missionData) {
-          console.log(`✓ Successfully fetched mission: ${id}`)
-          return missionData
-        }
-        
-        throw new Error('Mission not found')
-      } catch (error) {
-        console.error(`✗ Failed to fetch mission: ${id}`, error)
-        console.warn('⚠ Using mock data')
-        const mockData = getMockMissionsData()
-        const mockMission = mockData.data.find(m => m.id === id) || mockData.data[0]
-        return mockMission as ArcRaidersMission
+        throw error
       }
     },
     enabled: !!id,
@@ -1141,9 +790,8 @@ export const useRecipes = (params?: {
           console.error('✗ Failed to fetch recipes from both recipes and items endpoints', itemsError)
         }
         
-        // If both fail, use mock data
-        console.warn('⚠ Using mock data for recipes')
-        return getMockRecipesData(params)
+        // If both fail, throw error
+        throw new Error('Failed to fetch recipes from API')
       }
     },
   })
@@ -1224,8 +872,7 @@ export const useQuests = (params?: {
         throw new Error('No data received')
       } catch (error) {
         console.error('✗ Failed to fetch quests', error)
-        console.warn('⚠ Using mock data')
-        return getMockQuestsData(defaultParams)
+        throw error
       }
     },
   })
@@ -1279,10 +926,7 @@ export const useQuest = (id: string) => {
         throw new Error('Quest not found')
       } catch (error) {
         console.error(`✗ Failed to fetch quest: ${id}`, error)
-        console.warn('⚠ Using mock data')
-        const mockData = getMockQuestsData()
-        const mockQuest = mockData.data.find(q => q.id === id) || mockData.data[0]
-        return mockQuest as ArcRaidersQuest
+        throw error
       }
     },
     enabled: !!id,
@@ -1344,10 +988,9 @@ export const useArcs = (params?: {
         }
       }
       
-      // If all endpoints fail, use mock data
+      // If all endpoints fail, throw error
       console.error('✗ Failed to fetch arcs from all endpoints')
-      console.warn('⚠ Using mock data')
-      return getMockArcsData(defaultParams)
+      throw new Error('Failed to fetch arcs/enemies from API')
     },
   })
 }
@@ -1414,12 +1057,9 @@ export const useArc = (id: string) => {
         }
       }
       
-      // If all endpoints fail, try to find in mock data
+      // If all endpoints fail, throw error
       console.error(`✗ Failed to fetch arc: ${id}`)
-      console.warn('⚠ Using mock data')
-      const mockData = getMockArcsData()
-      const mockArc = mockData.data.find(arc => arc.id === id) || mockData.data[0]
-      return mockArc as ArcRaidersArc
+      throw new Error(`Failed to fetch arc/enemy: ${id}`)
     },
     enabled: !!id,
   })
@@ -1508,629 +1148,3 @@ export function findArcsThatDropItem(
   return results
 }
 
-/**
- * Mock arcs data for development
- */
-function getMockArcsData(params?: any): PaginatedResponse<ArcRaidersArc> {
-  const mockArcs: ArcRaidersArc[] = [
-    {
-      id: 'arc-scout',
-      name: 'Arc Scout',
-      description: 'A fast-moving reconnaissance unit that patrols the surface.',
-      type: 'Enemy',
-      difficulty: 'Common',
-      icon: 'https://via.placeholder.com/200x200/ef4444/ffffff?text=Scout',
-      drops: [
-        { item_id: 'scrap-metal', name: 'Scrap Metal', drop_rate: 0.8, quantity: 1 },
-        { item_id: 'adrenaline-shot', name: 'Adrenaline Shot', drop_rate: 0.15 },
-      ],
-      health: 50,
-    },
-    {
-      id: 'arc-walker',
-      name: 'Arc Walker',
-      description: 'A heavily armored combat unit with devastating melee attacks.',
-      type: 'Enemy',
-      difficulty: 'Uncommon',
-      icon: 'https://via.placeholder.com/200x200/8b5cf6/ffffff?text=Walker',
-      drops: [
-        { item_id: 'scrap-metal', name: 'Scrap Metal', drop_rate: 0.9, quantity: 2 },
-        { item_id: 'durable-cloth', name: 'Durable Cloth', drop_rate: 0.4 },
-        { item_id: 'red-dot-sight', name: 'Red Dot Sight', drop_rate: 0.1 },
-      ],
-      health: 200,
-      armor: 50,
-    },
-    {
-      id: 'arc-titan',
-      name: 'Arc Titan',
-      description: 'A massive boss unit that requires coordinated team effort to defeat.',
-      type: 'Boss',
-      difficulty: 'Rare',
-      icon: 'https://via.placeholder.com/200x200/f97316/ffffff?text=Titan',
-      drops: [
-        { item_id: 'scrap-metal', name: 'Scrap Metal', drop_rate: 1.0, quantity: 10 },
-        { item_id: 'ak-47', name: 'AK-47', drop_rate: 0.25 },
-        { item_id: 'herbal-bandage', name: 'Herbal Bandage', drop_rate: 0.5, quantity: 3 },
-      ],
-      health: 2000,
-      armor: 200,
-      shield: 100,
-      weak_points: ['head', 'core'],
-    },
-    {
-      id: 'arc-bombardier',
-      name: 'Bombardier',
-      description: 'A heavily armed ARC unit that launches explosive projectiles.',
-      type: 'Enemy',
-      difficulty: 'Uncommon',
-      icon: 'https://via.placeholder.com/200x200/ef4444/ffffff?text=Bombardier',
-      drops: [
-        { item_id: 'advanced-arc-powercell', name: 'Advanced ARC Powercell', drop_rate: 0.3 },
-        { item_id: 'scrap-metal', name: 'Scrap Metal', drop_rate: 0.7, quantity: 3 },
-      ],
-      health: 150,
-      armor: 75,
-    },
-  ]
-  
-  return {
-    data: mockArcs,
-    pagination: {
-      page: params?.page || 1,
-      limit: params?.limit || 100,
-      total: mockArcs.length,
-      totalPages: 1,
-      hasNextPage: false,
-      hasPrevPage: false,
-    },
-  }
-}
-
-/**
- * Mock missions data for development
- */
-function getMockMissionsData(params?: any): PaginatedResponse<ArcRaidersMission> {
-  const mockMissions: ArcRaidersMission[] = [
-    {
-      id: 'mission-retrieve-data',
-      name: 'Retrieve Data',
-      description: 'Recover critical data packages from ARC facilities. Navigate through enemy territory and extract valuable intel.',
-      type: 'Retrieval',
-      difficulty: 'Common',
-      region: 'Surface',
-      location: 'ARC Research Facility Alpha',
-      icon: 'https://via.placeholder.com/200x200/3b82f6/ffffff?text=Data',
-      objectives: [
-        'Collect 3 data packages',
-        'Eliminate ARC security units',
-        'Reach extraction point',
-      ],
-      rewards: [
-        { name: 'Scrap Metal', quantity: 50, value: 2500 },
-        { name: 'Data Chip', quantity: 1, rarity: 'Uncommon' },
-      ],
-      duration: 1800, // 30 minutes
-      recommended_level: 5,
-      required_level: 3,
-      max_players: 4,
-      min_players: 1,
-    },
-    {
-      id: 'mission-eliminate-threat',
-      name: 'Eliminate ARC Threat',
-      description: 'Take down a high-value ARC target disrupting supply lines. Coordinate with your team to neutralize the threat.',
-      type: 'Elimination',
-      difficulty: 'Uncommon',
-      region: 'Industrial Sector',
-      location: 'Supply Depot Gamma',
-      icon: 'https://via.placeholder.com/200x200/ef4444/ffffff?text=Target',
-      objectives: [
-        'Destroy 5 ARC Walkers',
-        'Defeat ARC Commander',
-        'Clear the area of hostiles',
-      ],
-      rewards: [
-        { name: 'Advanced ARC Powercell', quantity: 2, rarity: 'Rare', value: 2560 },
-        { name: 'Weapon Upgrade Kit', quantity: 1, rarity: 'Uncommon' },
-        { name: 'Raider Coins', quantity: 1500, value: 1500 },
-      ],
-      duration: 2400, // 40 minutes
-      recommended_level: 10,
-      required_level: 7,
-      max_players: 4,
-      min_players: 2,
-      prerequisites: ['mission-retrieve-data'],
-    },
-    {
-      id: 'mission-escort-convoy',
-      name: 'Escort Convoy',
-      description: 'Protect a supply convoy traveling through hostile territory. Defend against waves of ARC attacks.',
-      type: 'Escort',
-      difficulty: 'Rare',
-      region: 'Wastelands',
-      location: 'Trade Route 7',
-      icon: 'https://via.placeholder.com/200x200/f59e0b/ffffff?text=Escort',
-      objectives: [
-        'Keep convoy vehicles above 50% health',
-        'Eliminate all attacking ARC units',
-        'Reach destination safely',
-      ],
-      rewards: [
-        { name: 'Herbal Bandage', quantity: 5, rarity: 'Uncommon', value: 2250 },
-        { name: 'Durable Cloth', quantity: 10, rarity: 'Common' },
-        { name: 'Raider Coins', quantity: 2000, value: 2000 },
-      ],
-      duration: 3000, // 50 minutes
-      recommended_level: 15,
-      required_level: 12,
-      max_players: 4,
-      min_players: 3,
-      requires_items: [
-        { item_id: 'herbal-bandage', name: 'Herbal Bandage', quantity: 2 },
-      ],
-    },
-    {
-      id: 'mission-recover-artifact',
-      name: 'Recover Ancient Artifact',
-      description: 'Venture deep into ARC territory to recover a mysterious artifact. Face powerful enemies and solve environmental puzzles.',
-      type: 'Exploration',
-      difficulty: 'Epic',
-      region: 'Ancient Ruins',
-      location: 'Lost Temple',
-      icon: 'https://via.placeholder.com/200x200/8b5cf6/ffffff?text=Artifact',
-      objectives: [
-        { name: 'Navigate temple defenses', type: 'survival', completed: false },
-        { name: 'Solve 3 puzzle mechanisms', type: 'puzzle', target: 3, current: 0 },
-        { name: 'Defeat Temple Guardian', type: 'boss', completed: false },
-        { name: 'Recover artifact', type: 'retrieval', completed: false },
-      ],
-      rewards: [
-        { name: 'Ancient Fragment', quantity: 1, rarity: 'Legendary', value: 5000 },
-        { name: 'Exotic Material', quantity: 3, rarity: 'Rare' },
-        { name: 'Raider Coins', quantity: 3500, value: 3500 },
-      ],
-      duration: 3600, // 60 minutes
-      recommended_level: 20,
-      required_level: 18,
-      max_players: 4,
-      min_players: 2,
-      prerequisites: ['mission-eliminate-threat'],
-      unlocks: ['mission-raid-facility'],
-      tags: ['boss', 'puzzle', 'exploration'],
-    },
-    {
-      id: 'mission-raid-facility',
-      name: 'Raid ARC Facility',
-      description: 'Launch a coordinated assault on a major ARC facility. This is an endgame mission requiring maximum preparation.',
-      type: 'Raid',
-      difficulty: 'Legendary',
-      region: 'ARC Stronghold',
-      location: 'Primary Command Center',
-      icon: 'https://via.placeholder.com/200x200/f97316/ffffff?text=Raid',
-      objectives: [
-        { name: 'Breach facility defenses', type: 'objective', target: 4, current: 0 },
-        { name: 'Disable security systems', type: 'objective', target: 3, current: 0 },
-        { name: 'Defeat ARC Titan', type: 'boss', completed: false },
-        { name: 'Extract before facility collapse', type: 'escape', completed: false },
-      ],
-      rewards: [
-        { name: 'ARC Titan Core', quantity: 1, rarity: 'Legendary', value: 10000 },
-        { name: 'Elite Weapon Blueprint', quantity: 1, rarity: 'Epic' },
-        { name: 'Rare Materials Bundle', quantity: 1, rarity: 'Rare' },
-        { name: 'Raider Coins', quantity: 5000, value: 5000 },
-      ],
-      duration: 5400, // 90 minutes
-      recommended_level: 25,
-      required_level: 20,
-      max_players: 4,
-      min_players: 4,
-      prerequisites: ['mission-recover-artifact'],
-      requires_items: [
-        { item_id: 'herbal-bandage', name: 'Herbal Bandage', quantity: 5 },
-        { item_id: 'adrenaline-shot', name: 'Adrenaline Shot', quantity: 3 },
-      ],
-      tags: ['endgame', 'boss', 'raid'],
-      notes: 'This is the most challenging mission. Ensure your team is fully prepared with max-level gear.',
-    },
-  ]
-  
-  // Apply filters if provided
-  let filteredMissions = [...mockMissions]
-  
-  if (params?.id) {
-    filteredMissions = filteredMissions.filter(m => m.id === params.id)
-  }
-  if (params?.type) {
-    filteredMissions = filteredMissions.filter(m => m.type?.toLowerCase() === params.type.toLowerCase())
-  }
-  if (params?.difficulty) {
-    filteredMissions = filteredMissions.filter(m => m.difficulty?.toLowerCase() === params.difficulty.toLowerCase())
-  }
-  if (params?.region) {
-    filteredMissions = filteredMissions.filter(m => m.region?.toLowerCase() === params.region.toLowerCase())
-  }
-  if (params?.search) {
-    const searchLower = params.search.toLowerCase()
-    filteredMissions = filteredMissions.filter(m => 
-      m.name.toLowerCase().includes(searchLower) ||
-      m.description?.toLowerCase().includes(searchLower) ||
-      m.location?.toLowerCase().includes(searchLower)
-    )
-  }
-  
-  const page = params?.page || 1
-  const limit = params?.limit || 100
-  const total = filteredMissions.length
-  const totalPages = Math.ceil(total / limit)
-  const startIndex = (page - 1) * limit
-  const endIndex = startIndex + limit
-  const paginatedMissions = filteredMissions.slice(startIndex, endIndex)
-  
-  return {
-    data: paginatedMissions,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-    },
-  }
-}
-
-/**
- * Mock quests data for development
- */
-function getMockQuestsData(params?: any): PaginatedResponse<ArcRaidersQuest> {
-  const mockQuests: ArcRaidersQuest[] = [
-    {
-      id: 'quest-survival-basics',
-      name: 'Survival Basics',
-      description: 'Learn the fundamentals of survival in the hostile ARC-infested world. Complete basic tasks to get started.',
-      type: 'Tutorial',
-      difficulty: 'Common',
-      region: 'Starting Area',
-      location: 'Outpost Alpha',
-      icon: 'https://via.placeholder.com/200x200/84cc16/ffffff?text=Basics',
-      objectives: [
-        'Gather 10 Scrap Metal',
-        'Craft your first item',
-        'Complete first extraction',
-      ],
-      rewards: [
-        { name: 'Starter Pack', quantity: 1, rarity: 'Common' },
-        { name: 'Raider Coins', quantity: 100, value: 100 },
-      ],
-      duration: 900, // 15 minutes
-      recommended_level: 1,
-      required_level: 1,
-      max_players: 1,
-      min_players: 1,
-      quest_chain: 'new-player',
-      chain_position: 1,
-    },
-    {
-      id: 'quest-hunter-initiate',
-      name: 'Hunter Initiate',
-      description: 'Prove your worth by hunting down specific ARC targets. Track and eliminate designated enemies.',
-      type: 'Hunt',
-      difficulty: 'Uncommon',
-      region: 'Industrial Sector',
-      location: 'Hunting Grounds',
-      icon: 'https://via.placeholder.com/200x200/ef4444/ffffff?text=Hunt',
-      objectives: [
-        { name: 'Eliminate 5 ARC Scouts', type: 'kill', target: 5, current: 0 },
-        { name: 'Collect Scout Parts', type: 'collect', target: 10, current: 0 },
-        { name: 'Report to Hunter Master', type: 'turn-in', completed: false },
-      ],
-      rewards: [
-        { name: 'Hunter Badge', quantity: 1, rarity: 'Uncommon', value: 500 },
-        { name: 'Scout Components', quantity: 5, rarity: 'Common' },
-        { name: 'Raider Coins', quantity: 500, value: 500 },
-      ],
-      duration: 1800, // 30 minutes
-      recommended_level: 5,
-      required_level: 3,
-      max_players: 4,
-      min_players: 1,
-      prerequisites: ['quest-survival-basics'],
-      quest_chain: 'hunter',
-      chain_position: 1,
-      previous_quest: 'quest-survival-basics',
-      next_quest: 'quest-hunter-advanced',
-      tags: ['hunting', 'combat'],
-    },
-    {
-      id: 'quest-hunter-advanced',
-      name: 'Hunter Advanced',
-      description: 'Take on more challenging targets. Face elite ARC units and collect rare materials.',
-      type: 'Hunt',
-      difficulty: 'Rare',
-      region: 'Wastelands',
-      location: 'Elite Hunting Grounds',
-      icon: 'https://via.placeholder.com/200x200/f59e0b/ffffff?text=Advanced',
-      objectives: [
-        { name: 'Eliminate 3 ARC Walkers', type: 'kill', target: 3, current: 0 },
-        { name: 'Defeat Elite ARC Unit', type: 'boss', completed: false },
-        { name: 'Collect Elite Materials', type: 'collect', target: 5, current: 0 },
-      ],
-      rewards: [
-        { name: 'Elite Hunter Badge', quantity: 1, rarity: 'Rare', value: 1500 },
-        { name: 'Advanced Components', quantity: 3, rarity: 'Uncommon' },
-        { name: 'Raider Coins', quantity: 1200, value: 1200 },
-      ],
-      duration: 2400, // 40 minutes
-      recommended_level: 10,
-      required_level: 8,
-      max_players: 4,
-      min_players: 2,
-      prerequisites: ['quest-hunter-initiate'],
-      quest_chain: 'hunter',
-      chain_position: 2,
-      previous_quest: 'quest-hunter-initiate',
-      tags: ['hunting', 'boss', 'elite'],
-    },
-    {
-      id: 'quest-scavenger-rumor',
-      name: 'Scavenger Rumor',
-      description: 'Follow rumors of valuable loot in abandoned facilities. Explore dangerous areas for rare resources.',
-      type: 'Exploration',
-      difficulty: 'Uncommon',
-      region: 'Abandoned Sector',
-      location: 'Old Research Facility',
-      icon: 'https://via.placeholder.com/200x200/8b5cf6/ffffff?text=Loot',
-      objectives: [
-        'Explore 3 facility rooms',
-        'Find hidden cache',
-        'Retrieve valuable item',
-      ],
-      rewards: [
-        { name: 'Rare Loot Cache', quantity: 1, rarity: 'Rare', value: 2000 },
-        { name: 'Research Data', quantity: 1, rarity: 'Uncommon' },
-        { name: 'Raider Coins', quantity: 800, value: 800 },
-      ],
-      duration: 2100, // 35 minutes
-      recommended_level: 7,
-      required_level: 5,
-      max_players: 4,
-      min_players: 1,
-      requires_items: [
-        { item_id: 'lockpick', name: 'Lockpick', quantity: 2 },
-      ],
-      tags: ['exploration', 'loot'],
-    },
-    {
-      id: 'quest-ancient-mystery',
-      name: 'Ancient Mystery',
-      description: 'Investigate mysterious ancient ruins. Uncover secrets of the past and face powerful guardians.',
-      type: 'Story',
-      difficulty: 'Epic',
-      region: 'Ancient Ruins',
-      location: 'Lost Temple',
-      icon: 'https://via.placeholder.com/200x200/a855f7/ffffff?text=Mystery',
-      objectives: [
-        { name: 'Decipher ancient texts', type: 'puzzle', completed: false },
-        { name: 'Activate temple mechanisms', type: 'puzzle', target: 3, current: 0 },
-        { name: 'Defeat Temple Guardian', type: 'boss', completed: false },
-        { name: 'Retrieve ancient artifact', type: 'retrieval', completed: false },
-      ],
-      rewards: [
-        { name: 'Ancient Artifact', quantity: 1, rarity: 'Legendary', value: 5000 },
-        { name: 'Temple Knowledge', quantity: 1, rarity: 'Epic' },
-        { name: 'Raider Coins', quantity: 3000, value: 3000 },
-      ],
-      duration: 3600, // 60 minutes
-      recommended_level: 18,
-      required_level: 15,
-      max_players: 4,
-      min_players: 2,
-      quest_chain: 'ancient',
-      chain_position: 1,
-      next_quest: 'quest-ancient-awakening',
-      tags: ['story', 'boss', 'puzzle', 'exploration'],
-      notes: 'This quest requires solving complex puzzles and defeating a powerful boss. Bring a well-equipped team.',
-    },
-    {
-      id: 'quest-ancient-awakening',
-      name: 'Ancient Awakening',
-      description: 'The artifact has awakened ancient powers. Confront the source of the mystery and seal the ancient threat.',
-      type: 'Story',
-      difficulty: 'Legendary',
-      region: 'Ancient Ruins',
-      location: 'Heart of the Temple',
-      icon: 'https://via.placeholder.com/200x200/f97316/ffffff?text=Awakening',
-      objectives: [
-        { name: 'Navigate awakened temple', type: 'survival', completed: false },
-        { name: 'Defeat Ancient Guardian Boss', type: 'boss', completed: false },
-        { name: 'Seal the ancient power', type: 'objective', completed: false },
-      ],
-      rewards: [
-        { name: 'Sealed Artifact', quantity: 1, rarity: 'Legendary', value: 10000 },
-        { name: 'Guardian Essence', quantity: 1, rarity: 'Epic' },
-        { name: 'Ancient Weapon Blueprint', quantity: 1, rarity: 'Legendary' },
-        { name: 'Raider Coins', quantity: 5000, value: 5000 },
-      ],
-      duration: 5400, // 90 minutes
-      recommended_level: 22,
-      required_level: 20,
-      max_players: 4,
-      min_players: 4,
-      prerequisites: ['quest-ancient-mystery'],
-      quest_chain: 'ancient',
-      chain_position: 2,
-      previous_quest: 'quest-ancient-mystery',
-      requires_items: [
-        { item_id: 'ancient-artifact', name: 'Ancient Artifact', quantity: 1 },
-        { item_id: 'herbal-bandage', name: 'Herbal Bandage', quantity: 10 },
-      ],
-      tags: ['story', 'boss', 'endgame'],
-      notes: 'The final quest in the Ancient chain. This is extremely challenging and requires maximum preparation.',
-      guide: 'Form a full team of 4 players. Ensure everyone has max-level gear and plenty of healing items. The final boss has multiple phases and requires coordinated attacks.',
-    },
-  ]
-  
-  // Apply filters if provided
-  let filteredQuests = [...mockQuests]
-  
-  if (params?.id) {
-    filteredQuests = filteredQuests.filter(q => q.id === params.id)
-  }
-  if (params?.type) {
-    filteredQuests = filteredQuests.filter(q => q.type?.toLowerCase() === params.type.toLowerCase())
-  }
-  if (params?.difficulty) {
-    filteredQuests = filteredQuests.filter(q => q.difficulty?.toLowerCase() === params.difficulty.toLowerCase())
-  }
-  if (params?.region) {
-    filteredQuests = filteredQuests.filter(q => q.region?.toLowerCase() === params.region.toLowerCase())
-  }
-  if (params?.quest_chain) {
-    filteredQuests = filteredQuests.filter(q => q.quest_chain === params.quest_chain)
-  }
-  if (params?.search) {
-    const searchLower = params.search.toLowerCase()
-    filteredQuests = filteredQuests.filter(q => 
-      q.name.toLowerCase().includes(searchLower) ||
-      q.description?.toLowerCase().includes(searchLower) ||
-      q.location?.toLowerCase().includes(searchLower)
-    )
-  }
-  
-  const page = params?.page || 1
-  const limit = params?.limit || 100
-  const total = filteredQuests.length
-  const totalPages = Math.ceil(total / limit)
-  const startIndex = (page - 1) * limit
-  const endIndex = startIndex + limit
-  const paginatedQuests = filteredQuests.slice(startIndex, endIndex)
-  
-  return {
-    data: paginatedQuests,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-    },
-  }
-}
-
-/**
- * Mock recipes data for development
- */
-function getMockRecipesData(params?: any): ArcRaidersRecipe[] | PaginatedResponse<ArcRaidersRecipe> {
-  const mockRecipes: ArcRaidersRecipe[] = [
-    {
-      id: 'recipe-herbal-bandage',
-      name: 'Herbal Bandage',
-      output: 'herbal-bandage',
-      requires: [
-        { item: 'durable-cloth', count: 1 },
-        { item: 'great-mullein', count: 1 },
-      ],
-      description: 'An improvised medical item that gradually restores health over time.',
-      workbench: 'Basic Workbench',
-      rarity: 'Uncommon',
-      components: [
-        { id: 'durable-cloth', name: 'Durable Cloth', quantity: 1, item_type: 'Refined Material' },
-        { id: 'great-mullein', name: 'Great Mullein', quantity: 1, item_type: 'Nature' },
-      ],
-    } as any,
-    {
-      id: 'recipe-ak47',
-      name: 'AK-47',
-      output: 'ak-47',
-      requires: [
-        { item: 'scrap-metal', count: 50 },
-        { item: 'advanced-components', count: 5 },
-        { item: 'weapon-frame', count: 1 },
-      ],
-      description: 'A reliable automatic rifle with excellent stopping power.',
-      workbench: 'Weapons Workbench',
-      rarity: 'Rare',
-      components: [
-        { id: 'scrap-metal', name: 'Scrap Metal', quantity: 50, item_type: 'Material' },
-        { id: 'advanced-components', name: 'Advanced Components', quantity: 5, item_type: 'Component' },
-        { id: 'weapon-frame', name: 'Weapon Frame', quantity: 1, item_type: 'Component' },
-      ],
-    } as any,
-    {
-      id: 'recipe-red-dot-sight',
-      name: 'Red Dot Sight',
-      output: 'red-dot-sight',
-      requires: [
-        { item: 'scrap-metal', count: 10 },
-        { item: 'optic-lens', count: 1 },
-      ],
-      description: 'Improves weapon accuracy.',
-      workbench: 'Basic Workbench',
-      rarity: 'Uncommon',
-      components: [
-        { id: 'scrap-metal', name: 'Scrap Metal', quantity: 10, item_type: 'Material' },
-        { id: 'optic-lens', name: 'Optic Lens', quantity: 1, item_type: 'Component' },
-      ],
-    } as any,
-    {
-      id: 'recipe-adrenaline-shot',
-      name: 'Adrenaline Shot',
-      output: 'adrenaline-shot',
-      requires: [
-        { item: 'scrap-metal', count: 5 },
-        { item: 'chemical-base', count: 1 },
-      ],
-      description: 'A serum that fully restores stamina and temporarily increases stamina regeneration.',
-      workbench: 'Basic Workbench',
-      rarity: 'Common',
-      components: [
-        { id: 'scrap-metal', name: 'Scrap Metal', quantity: 5, item_type: 'Material' },
-        { id: 'chemical-base', name: 'Chemical Base', quantity: 1, item_type: 'Component' },
-      ],
-    } as any,
-  ]
-  
-  // Apply filters if provided
-  let filteredRecipes = [...mockRecipes]
-  
-  if (params?.search) {
-    const searchLower = params.search.toLowerCase()
-    filteredRecipes = filteredRecipes.filter(r => 
-      r.name.toLowerCase().includes(searchLower) ||
-      r.description?.toLowerCase().includes(searchLower)
-    )
-  }
-  
-  if (params?.workbench) {
-    filteredRecipes = filteredRecipes.filter(r => 
-      (r as any).workbench?.toLowerCase() === params.workbench.toLowerCase()
-    )
-  }
-  
-  // Return as array or paginated response
-  if (params?.page) {
-    const page = params.page || 1
-    const limit = params.limit || 100
-    const total = filteredRecipes.length
-    const totalPages = Math.ceil(total / limit)
-    const startIndex = (page - 1) * limit
-    const endIndex = startIndex + limit
-    const paginatedRecipes = filteredRecipes.slice(startIndex, endIndex)
-    
-    return {
-      data: paginatedRecipes,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
-    }
-  }
-  
-  return filteredRecipes
-}

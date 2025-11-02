@@ -81,7 +81,13 @@ const QuestDetail = () => {
     )
   }
   
+  // Try to get image from quest, or fallback to trader/giver image
   const questImage = quest.image || quest.imageUrl || quest.icon || quest.thumbnail
+  const traderImage = quest.trader?.avatar || quest.trader?.image || quest.trader?.icon || 
+                      quest.giver?.avatar || quest.giver?.image || quest.giver?.icon ||
+                      quest.provider?.avatar || quest.provider?.image || quest.provider?.icon
+  // Use trader image if quest doesn't have its own image
+  const displayImage = questImage || traderImage
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
@@ -109,22 +115,36 @@ const QuestDetail = () => {
           {/* Left Column - Quest Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden sticky top-6">
-              {/* Image */}
+              {/* Image - Shows trader/giver image if quest doesn't have one */}
               <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-8 flex items-center justify-center h-64 relative">
-                {questImage ? (
-                  <img 
-                    src={questImage} 
-                    alt={quest.name}
-                    className="max-h-full max-w-full object-contain drop-shadow-2xl"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                      e.currentTarget.parentElement!.querySelector('.fallback-icon')?.classList.remove('hidden')
-                    }}
-                  />
-                ) : null}
-                <div className={`fallback-icon w-32 h-32 bg-white/30 rounded-lg flex items-center justify-center ${questImage ? 'hidden' : ''}`}>
-                  <Target className="w-16 h-16 text-white" />
-                </div>
+                {displayImage ? (
+                  <>
+                    <img 
+                      src={displayImage} 
+                      alt={traderImage ? (quest.trader?.name || quest.giver?.name || quest.provider?.name || 'Quest Giver') : quest.name}
+                      className="max-h-full max-w-full object-contain drop-shadow-2xl"
+                      onError={(e) => {
+                        // Fallback if image fails to load
+                        e.currentTarget.style.display = 'none'
+                        e.currentTarget.parentElement!.querySelector('.fallback-icon')?.classList.remove('hidden')
+                      }}
+                    />
+                    <div className="fallback-icon hidden absolute inset-0 flex items-center justify-center">
+                      <div className="w-32 h-32 bg-white/30 rounded-lg flex items-center justify-center">
+                        <Target className="w-16 h-16 text-white" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-32 h-32 bg-white/30 rounded-lg flex items-center justify-center">
+                    <Target className="w-16 h-16 text-white" />
+                  </div>
+                )}
+                {traderImage && !questImage && (
+                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                    {quest.trader?.name || quest.giver?.name || quest.provider?.name || 'Quest Giver'}
+                  </div>
+                )}
               </div>
               
               {/* Card Content */}

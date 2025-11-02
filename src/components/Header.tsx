@@ -8,7 +8,6 @@ const Header = () => {
     { name: 'Home', path: '/' },
     { name: 'Items', path: '/items' },
     { name: 'Enemies', path: '/enemies' },
-    { name: 'Missions', path: '/missions' },
     { name: 'Quests', path: '/quests' },
     { name: 'Crafting', path: '/crafting' },
   ]
