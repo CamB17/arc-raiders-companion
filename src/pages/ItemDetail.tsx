@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { useItem, useArcs, findArcsThatDropItem } from '../hooks/useArcRaidersApi'
 import { ArrowLeft, Weight, Coins, Package, User, TrendingUp, Recycle, Target } from 'lucide-react'
 import ItemPreview from '../components/ItemPreview'
+import GLTFViewer from '../components/GLTFViewer'
 
 const getRarityColor = (rarity?: string) => {
   const colors: Record<string, string> = {
@@ -147,6 +148,12 @@ const ItemDetail = () => {
   // Get the best available image - API uses 'icon'
   const itemImage = item.icon || item.image || item.imageUrl || item.thumbnail
   
+  // Get GLTF model URL - check multiple possible field names
+  const gltfUrl = item.gltf || item.model3d || item.model_3d || item.gltf_url || item.model_url
+  
+  // Check if this is a weapon type that should show 3D viewer
+  const isWeapon = itemType?.toLowerCase() === 'weapon' || itemType?.toLowerCase() === 'weapons'
+  
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -175,24 +182,31 @@ const ItemDetail = () => {
           {/* Left Column - Item Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden sticky top-6">
-              {/* Image */}
-              <div className="bg-gradient-to-br from-green-600 to-green-800 p-8 flex items-center justify-center h-64 relative">
-                {itemImage ? (
-                  <img 
-                    src={itemImage} 
-                    alt={item.name}
-                    className="max-h-full max-w-full object-contain drop-shadow-2xl"
-                    onError={(e) => {
-                      // Fallback if image fails to load
-                      e.currentTarget.style.display = 'none'
-                      e.currentTarget.parentElement!.querySelector('.fallback-icon')?.classList.remove('hidden')
-                    }}
-                  />
-                ) : null}
-                <div className={`fallback-icon w-32 h-32 bg-white/30 rounded-lg flex items-center justify-center ${itemImage ? 'hidden' : ''}`}>
-                  <Package className="w-16 h-16 text-white" />
+              {/* 3D Model Viewer for Weapons */}
+              {isWeapon && gltfUrl ? (
+                <div className="bg-gradient-to-br from-primary-100 to-primary-200 h-96 rounded-t-xl overflow-hidden">
+                  <GLTFViewer url={gltfUrl} className="h-full w-full" autoRotate={true} />
                 </div>
-              </div>
+              ) : (
+                /* Image Fallback */
+                <div className="bg-gradient-to-br from-green-600 to-green-800 p-8 flex items-center justify-center h-64 relative">
+                  {itemImage ? (
+                    <img 
+                      src={itemImage} 
+                      alt={item.name}
+                      className="max-h-full max-w-full object-contain drop-shadow-2xl"
+                      onError={(e) => {
+                        // Fallback if image fails to load
+                        e.currentTarget.style.display = 'none'
+                        e.currentTarget.parentElement!.querySelector('.fallback-icon')?.classList.remove('hidden')
+                      }}
+                    />
+                  ) : null}
+                  <div className={`fallback-icon w-32 h-32 bg-white/30 rounded-lg flex items-center justify-center ${itemImage ? 'hidden' : ''}`}>
+                    <Package className="w-16 h-16 text-white" />
+                  </div>
+                </div>
+              )}
               
               {/* Card Content */}
               <div className="p-6 bg-primary-50">

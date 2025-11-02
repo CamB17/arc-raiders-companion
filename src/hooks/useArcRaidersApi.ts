@@ -23,6 +23,13 @@ export interface ArcRaidersItem {
   imageUrl?: string
   thumbnail?: string
   
+  // 3D Model - GLTF format
+  gltf?: string
+  model3d?: string
+  model_3d?: string
+  gltf_url?: string
+  model_url?: string
+  
   // Stats - API uses stat_block
   stat_block?: {
     weight?: number
