@@ -1,22 +1,44 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Target, Award, ArrowRight } from 'lucide-react'
+import { MapPin, Target, Award, ArrowRight, Crosshair, Package } from 'lucide-react'
+import { MapDataPoint } from '../hooks/useArcRaidersApi'
 
 interface MapLocation {
   id: string
   name: string
-  type: 'mission' | 'quest'
+  type: 'mission' | 'quest' | 'spawn' | 'poi' | 'extraction' | 'resource' | 'enemy'
   x: number // Percentage from left (0-100)
   y: number // Percentage from top (0-100)
   difficulty?: string
   region?: string
   location?: string
+  description?: string
+  icon?: string
+  image?: string
 }
+
+// Helper to convert MapDataPoint to MapLocation
+export const mapDataPointToLocation = (point: MapDataPoint): MapLocation => ({
+  id: point.id,
+  name: point.name,
+  type: point.type,
+  x: point.x,
+  y: point.y,
+  difficulty: point.difficulty,
+  region: point.region,
+  location: point.location,
+  description: point.description,
+  icon: point.icon,
+  image: point.image,
+})
 
 interface InteractiveMapProps {
   locations: MapLocation[]
   width?: number
   height?: number
+  mapTitle?: string
+  mapImage?: string
+  showLegend?: boolean
 }
 
 const getDifficultyColor = (difficulty?: string) => {
@@ -31,7 +53,47 @@ const getDifficultyColor = (difficulty?: string) => {
   return colors[difficulty?.toLowerCase() || ''] || '#1e293b'
 }
 
-const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMapProps) => {
+const getTypeColor = (type: string) => {
+  const colors: Record<string, string> = {
+    mission: '#2563eb',
+    quest: '#9333ea',
+    spawn: '#16a34a',
+    extraction: '#ea580c',
+    resource: '#f59e0b',
+    enemy: '#ef4444',
+    poi: '#6b7280',
+  }
+  
+  return colors[type?.toLowerCase() || ''] || '#1e293b'
+}
+
+const getTypeIcon = (type: string) => {
+  switch (type?.toLowerCase()) {
+    case 'mission':
+      return Target
+    case 'quest':
+      return Award
+    case 'spawn':
+      return MapPin
+    case 'extraction':
+      return ArrowRight
+    case 'resource':
+      return Package
+    case 'enemy':
+      return Crosshair
+    default:
+      return MapPin
+  }
+}
+
+const InteractiveMap = ({ 
+  locations, 
+  width = 800, 
+  height = 600,
+  mapTitle,
+  mapImage,
+  showLegend = true,
+}: InteractiveMapProps) => {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null)
   const [hoveredLocation, setHoveredLocation] = useState<MapLocation | null>(null)
   
@@ -43,13 +105,23 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
       <div className="relative z-10 mb-4">
         <h3 className="text-xl font-techno font-bold text-navy-800 flex items-center gap-2">
           <MapPin className="w-5 h-5 text-accent-600" />
-          Mission & Quest Locations
+          {mapTitle || 'Interactive Map'}
         </h3>
         <p className="text-sm text-navy-600 mt-1">Click on markers to view details</p>
       </div>
       
       {/* Map Container */}
-      <div className="relative z-10 bg-white/50 rounded-lg border border-primary-300" style={{ width: '100%', height: `${height}px` }}>
+      <div className="relative z-10 bg-white/50 rounded-lg border border-primary-300 overflow-hidden" style={{ width: '100%', height: `${height}px` }}>
+        {/* Background Map Image */}
+        {mapImage && (
+          <img 
+            src={mapImage} 
+            alt="Map background" 
+            className="absolute inset-0 w-full h-full object-cover opacity-20"
+          />
+        )}
+        
+        <div className="relative w-full h-full" style={{ width: '100%', height: `${height}px` }}>
         <svg
           width="100%"
           height="100%"
@@ -79,7 +151,8 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
             const y = (location.y / 100) * height
             const isSelected = selectedLocation?.id === location.id
             const isHovered = hoveredLocation?.id === location.id
-            const color = getDifficultyColor(location.difficulty)
+            const color = location.difficulty ? getDifficultyColor(location.difficulty) : getTypeColor(location.type)
+            const IconComponent = getTypeIcon(location.type)
             
             return (
               <g
@@ -109,13 +182,9 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
                   className="transition-all"
                 />
                 
-                {/* Icon inside marker */}
+                {/* Type icon indicator */}
                 <g transform={`translate(${x}, ${y})`} className="pointer-events-none">
-                  {location.type === 'mission' ? (
-                    <circle cx="0" cy="0" r="3" fill="white" />
-                  ) : (
-                    <circle cx="0" cy="0" r="3" fill="white" />
-                  )}
+                  <circle cx="0" cy="0" r="3" fill="white" />
                 </g>
                 
                 {/* Pulse animation for selected/hovered */}
@@ -166,11 +235,10 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
             }}
           >
             <div className="flex items-center gap-2 mb-1">
-              {hoveredLocation.type === 'mission' ? (
-                <Target className="w-4 h-4 text-accent-600" />
-              ) : (
-                <Award className="w-4 h-4 text-indigo-600" />
-              )}
+              {(() => {
+                const IconComponent = getTypeIcon(hoveredLocation.type)
+                return <IconComponent className="w-4 h-4 text-accent-600" />
+              })()}
               <span className="font-semibold text-navy-800 text-sm">{hoveredLocation.name}</span>
             </div>
             {hoveredLocation.location && (
@@ -181,21 +249,24 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
             )}
           </div>
         )}
+        </div>
       </div>
-      
-      {/* Selected location details panel */}
+        
+        {/* Selected location details panel */}
       {selectedLocation && (
         <div className="relative z-10 mt-4 bg-white rounded-lg border-2 border-accent-400 shadow-xl p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                {selectedLocation.type === 'mission' ? (
-                  <Target className="w-5 h-5 text-accent-600" />
-                ) : (
-                  <Award className="w-5 h-5 text-indigo-600" />
-                )}
+                {(() => {
+                  const IconComponent = getTypeIcon(selectedLocation.type)
+                  return <IconComponent className="w-5 h-5 text-accent-600" />
+                })()}
                 <h4 className="font-techno font-bold text-lg text-navy-800">{selectedLocation.name}</h4>
               </div>
+              {selectedLocation.description && (
+                <p className="text-sm text-navy-600 mb-2">{selectedLocation.description}</p>
+              )}
               {selectedLocation.location && (
                 <p className="text-sm text-navy-600 mb-2">
                   <MapPin className="w-4 h-4 inline mr-1" />
@@ -219,47 +290,70 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
               ✕
             </button>
           </div>
-          <Link
-            to={`/${selectedLocation.type === 'mission' ? 'missions' : 'quests'}/${selectedLocation.id}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors text-sm font-medium"
-          >
-            View Details
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          {(selectedLocation.type === 'mission' || selectedLocation.type === 'quest') && (
+            <Link
+              to={`/${selectedLocation.type === 'mission' ? 'missions' : 'quests'}/${selectedLocation.id}`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              View Details
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
         </div>
       )}
       
       {/* Legend */}
-      <div className="relative z-10 mt-4 flex flex-wrap gap-4 text-xs">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <span className="text-navy-600">Common</span>
+      {showLegend && (
+        <div className="relative z-10 mt-4 flex flex-wrap gap-4 text-xs">
+          {/* Type Legend */}
+          <div className="flex items-center gap-2">
+            <Target className="w-3 h-3 text-blue-600" />
+            <span className="text-navy-600">Mission</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Award className="w-3 h-3 text-purple-600" />
+            <span className="text-navy-600">Quest</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-3 h-3 text-green-600" />
+            <span className="text-navy-600">Spawn</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ArrowRight className="w-3 h-3 text-orange-600" />
+            <span className="text-navy-600">Extraction</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Package className="w-3 h-3 text-yellow-600" />
+            <span className="text-navy-600">Resource</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Crosshair className="w-3 h-3 text-red-600" />
+            <span className="text-navy-600">Enemy</span>
+          </div>
+          
+          {/* Difficulty Legend */}
+          <div className="ml-auto flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+            <span className="text-navy-600">Common</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-600"></div>
+            <span className="text-navy-600">Uncommon</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+            <span className="text-navy-600">Rare</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+            <span className="text-navy-600">Epic</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-orange-600"></div>
+            <span className="text-navy-600">Legendary</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-600"></div>
-          <span className="text-navy-600">Uncommon</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-          <span className="text-navy-600">Rare</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-purple-600"></div>
-          <span className="text-navy-600">Epic</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-orange-600"></div>
-          <span className="text-navy-600">Legendary</span>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Target className="w-3 h-3 text-accent-600" />
-          <span className="text-navy-600">Mission</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Award className="w-3 h-3 text-indigo-600" />
-          <span className="text-navy-600">Quest</span>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

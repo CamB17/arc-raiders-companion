@@ -2134,3 +2134,422 @@ function getMockRecipesData(params?: any): ArcRaidersRecipe[] | PaginatedRespons
   
   return filteredRecipes
 }
+
+/**
+ * Map data interface for interactive maps
+ */
+export interface MapDataPoint {
+  id: string
+  name: string
+  type: string // Extended to support all marker types
+  category?: string // Category like 'container', 'arc', 'location'
+  x: number // Percentage from left (0-100)
+  y: number // Percentage from top (0-100)
+  difficulty?: string
+  region?: string
+  location?: string
+  description?: string
+  icon?: string
+  image?: string
+  metadata?: Record<string, any>
+}
+
+export interface MapZone {
+  id: string
+  name: string
+  displayName: string
+  description?: string
+  image?: string
+  thumbnail?: string
+  width?: number
+  height?: number
+}
+
+/**
+ * Map zone metadata interface
+ */
+export interface MapZoneInfo {
+  id: string
+  name: string
+  displayName: string
+  description?: string
+  image?: string
+  thumbnail?: string
+  possibleEvents?: string[]
+  width?: number
+  height?: number
+}
+
+/**
+ * Hook to fetch available maps/zones list
+ * @param tableID - Game ID (usually 'arc-raiders')
+ */
+export const useAvailableMaps = (tableID: string = 'arc-raiders') => {
+  return useQuery<MapZoneInfo[]>({
+    queryKey: ['arc-raiders', 'available-maps', tableID],
+    queryFn: async () => {
+      try {
+        // Try to fetch from a maps list endpoint
+        // If that doesn't exist, we'll use the known map IDs
+        const apiUrl = import.meta.env.DEV 
+          ? '/api/arc-raiders/maps'  // Proxy in development
+          : 'https://metaforge.app/api/arc-raiders/maps'  // Direct in production
+        
+        const response = await axios.get(apiUrl, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        })
+        
+        if (response.data && Array.isArray(response.data)) {
+          console.log(`✓ Successfully fetched ${response.data.length} maps`)
+          return response.data
+        }
+        
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          console.log(`✓ Successfully fetched ${response.data.data.length} maps`)
+          return response.data.data
+        }
+        
+        throw new Error('Invalid response format')
+      } catch (error) {
+        console.warn('⚠ Maps list endpoint not available, using known map IDs')
+        // Return known maps based on MetaForge
+        return getKnownMaps()
+      }
+    },
+    enabled: !!tableID,
+  })
+}
+
+/**
+ * Get known maps from MetaForge structure
+ */
+function getKnownMaps(): MapZoneInfo[] {
+  return [
+    {
+      id: 'dam',
+      name: 'dam',
+      displayName: 'Dam Battlegrounds',
+      description: 'The Alcantara Power Plant, or "The Dam", once served as a crucial Raider stronghold during the bitter closing battles of the First Wave. Even now, these toxic, waterlogged lands remain a hotspot for ARC skirmishes.',
+      thumbnail: 'https://cdn.metaforge.app/arc-raiders/ui/dam.webp',
+      image: 'https://cdn.metaforge.app/arc-raiders/ui/dam.webp',
+      possibleEvents: [
+        'Prospecting Probes',
+        'Harvester',
+        'Uncovered Caches',
+        'Husk Graveyard',
+        'Lush Blooms',
+        'Night Raid',
+      ],
+    },
+    {
+      id: 'spaceport',
+      name: 'spaceport',
+      displayName: 'The Spaceport',
+      description: 'A majestic testament to humanity\'s past ambitions, Acerra Spaceport is where the Exodus shuttles, vessels of hope and desperation, once roared into the heavens, leaving a beleaguered Earth behind.',
+      thumbnail: 'https://cdn.metaforge.app/arc-raiders/ui/spaceport.webp',
+      image: 'https://cdn.metaforge.app/arc-raiders/ui/spaceport.webp',
+      possibleEvents: [
+        'Prospecting Probes',
+        'Harvester',
+        'Uncovered Caches',
+        'Husk Graveyard',
+        'Launch Tower Loot',
+        'Lush Blooms',
+        'Night Raid',
+      ],
+    },
+    {
+      id: 'buried-city',
+      name: 'buried-city',
+      displayName: 'Buried City',
+      description: 'Amidst the sand dunes in this arid wasteland, Buried City is a remnant of the old world quite unlike the cold steel spires of the Exodus age. Walk these narrow streets and empty plazas, and know that people once lived here.',
+      thumbnail: 'https://cdn.metaforge.app/arc-raiders/ui/buried-city.webp',
+      image: 'https://cdn.metaforge.app/arc-raiders/ui/buried-city.webp',
+      possibleEvents: [
+        'Prospecting Probes',
+        'Uncovered Caches',
+        'Husk Graveyard',
+        'Lush Blooms',
+        'Night Raid',
+      ],
+    },
+    {
+      id: 'blue-gate',
+      name: 'blue-gate',
+      displayName: 'Blue Gate',
+      description: 'Once a steadyfast symbol of defiant connection, the Blue Gate now serves as a daunting entryway into the perilous mountain ranges. The surrounding valley bears scars both new and old.',
+      thumbnail: 'https://cdn.metaforge.app/arc-raiders/ui/blue-gate.webp',
+      image: 'https://cdn.metaforge.app/arc-raiders/ui/blue-gate.webp',
+      possibleEvents: [
+        'Night Raid',
+        '?',
+      ],
+    },
+  ]
+}
+
+export interface MapDataResponse {
+  data: MapDataPoint[]
+  mapInfo?: {
+    id: string
+    name: string
+    width?: number
+    height?: number
+    image?: string
+    imageUrl?: string
+    thumbnail?: string
+  }
+  imageUrl?: string // Map image URL at root level
+}
+
+/**
+ * Hook to fetch map data for a specific zone
+ * @param tableID - Game ID (usually 'arc-raiders')
+ * @param mapID - Map identifier/zone ID
+ */
+export const useMapData = (tableID: string, mapID: string) => {
+  return useQuery<MapDataResponse>({
+    queryKey: ['arc-raiders', 'map-data', tableID, mapID],
+    queryFn: async () => {
+      try {
+        // Use the game-map-data endpoint
+        // Construct the correct URL - game-map-data is at the root API level
+        const apiUrl = import.meta.env.DEV 
+          ? '/api/game-map-data'  // Proxy in development
+          : 'https://metaforge.app/api/game-map-data'  // Direct in production
+        
+        const response = await axios.get(apiUrl, {
+          params: {
+            tableID,
+            mapID,
+          },
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          timeout: 15000,
+        })
+        
+        if (response.data) {
+          console.log(`✓ Successfully fetched map data for ${mapID}`)
+          
+          // Handle different response structures
+          let mapData: MapDataResponse
+          
+          if (response.data.data && Array.isArray(response.data.data)) {
+            mapData = response.data
+          } else if (Array.isArray(response.data)) {
+            mapData = {
+              data: response.data,
+            }
+          } else {
+            mapData = {
+              data: [],
+            }
+          }
+          
+          // Extract imageUrl from response (could be at root or in mapInfo)
+          const imageUrl = response.data.imageUrl || response.data.mapInfo?.imageUrl || response.data.mapInfo?.image
+          
+          // Normalize map data points to our interface
+          const normalizedData = mapData.data.map((point: any) => {
+            // Handle different coordinate formats
+            const x = point.x_percent || point.x || point.map_x_percent || point.map_x || 0
+            const y = point.y_percent || point.y || point.map_y_percent || point.map_y || 0
+            
+            // Determine category from type or metadata
+            let category = point.category || point.type || 'other'
+            const type = point.type || point.category || 'poi'
+            
+            // Normalize category names
+            if (type.includes('container') || type.includes('crate') || type.includes('case') || 
+                type.includes('bag') || type.includes('basket') || type.includes('car') ||
+                type.includes('husk') || type.includes('courier') || type.includes('probe')) {
+              category = 'container'
+            } else if (type.includes('tick') || type.includes('pop') || type.includes('fireball') ||
+                       type.includes('surveyor') || type.includes('turret') || type.includes('sentinel') ||
+                       type.includes('rocketeer') || type.includes('bombardier') || type.includes('bastion') ||
+                       type.includes('leaper') || type.includes('hornet') || type.includes('queen') ||
+                       type.includes('snitch') || type.includes('wasp') || type.includes('enemy') ||
+                       type.includes('arc')) {
+              category = 'arc'
+            } else if (type.includes('extraction') || type.includes('spawn') || type.includes('depot') ||
+                       type.includes('station') || type.includes('camp') || type.includes('room')) {
+              category = 'location'
+            }
+            
+            return {
+              id: point.id || point.name || `point-${x}-${y}`,
+              name: point.name || point.title || 'Unknown Location',
+              type: type,
+              category: category,
+              x: typeof x === 'number' ? x : parseFloat(x) || 0,
+              y: typeof y === 'number' ? y : parseFloat(y) || 0,
+              difficulty: point.difficulty,
+              region: point.region || mapID,
+              location: point.location || point.area,
+              description: point.description,
+              icon: point.icon || point.image,
+              image: point.image || point.icon,
+              metadata: {
+                ...point.metadata,
+                category: category,
+                originalType: type,
+              },
+            } as MapDataPoint
+          })
+          
+          return {
+            data: normalizedData,
+            mapInfo: mapData.mapInfo || {
+              id: mapID,
+              name: mapID,
+              imageUrl: imageUrl,
+            },
+            imageUrl: imageUrl, // Also include at root level for easy access
+          }
+        }
+        
+        throw new Error('No data received')
+      } catch (error) {
+        console.error(`✗ Failed to fetch map data for ${mapID}`, error)
+        console.warn('⚠ Using mock map data')
+        return getMockMapData(tableID, mapID)
+      }
+    },
+    enabled: !!tableID && !!mapID,
+  })
+}
+
+/**
+ * Mock map data for development
+ */
+function getMockMapData(tableID: string, mapID: string): MapDataResponse {
+  // Common zones in Arc Raiders
+  const mockZones: Record<string, MapDataPoint[]> = {
+    'surface': [
+      {
+        id: 'mission-retrieve-data',
+        name: 'Retrieve Data',
+        type: 'mission',
+        x: 25,
+        y: 30,
+        difficulty: 'Common',
+        region: 'Surface',
+        location: 'ARC Research Facility Alpha',
+      },
+      {
+        id: 'spawn-surface-1',
+        name: 'Surface Spawn Point',
+        type: 'spawn',
+        x: 20,
+        y: 20,
+        region: 'Surface',
+      },
+      {
+        id: 'extraction-surface-1',
+        name: 'Surface Extraction',
+        type: 'extraction',
+        x: 30,
+        y: 40,
+        region: 'Surface',
+      },
+    ],
+    'industrial-sector': [
+      {
+        id: 'mission-eliminate-threat',
+        name: 'Eliminate ARC Threat',
+        type: 'mission',
+        x: 45,
+        y: 35,
+        difficulty: 'Uncommon',
+        region: 'Industrial Sector',
+        location: 'Supply Depot Gamma',
+      },
+      {
+        id: 'arc-walker-spawn',
+        name: 'ARC Walker Spawn',
+        type: 'enemy',
+        x: 50,
+        y: 40,
+        region: 'Industrial Sector',
+      },
+    ],
+    'wastelands': [
+      {
+        id: 'mission-escort-convoy',
+        name: 'Escort Convoy',
+        type: 'mission',
+        x: 60,
+        y: 50,
+        difficulty: 'Rare',
+        region: 'Wastelands',
+        location: 'Trade Route 7',
+      },
+      {
+        id: 'resource-wasteland-1',
+        name: 'Resource Cache',
+        type: 'resource',
+        x: 55,
+        y: 45,
+        region: 'Wastelands',
+      },
+    ],
+    'ancient-ruins': [
+      {
+        id: 'mission-recover-artifact',
+        name: 'Recover Ancient Artifact',
+        type: 'mission',
+        x: 70,
+        y: 65,
+        difficulty: 'Epic',
+        region: 'Ancient Ruins',
+        location: 'Lost Temple',
+      },
+      {
+        id: 'temple-guardian',
+        name: 'Temple Guardian',
+        type: 'enemy',
+        x: 75,
+        y: 70,
+        difficulty: 'Epic',
+        region: 'Ancient Ruins',
+      },
+    ],
+    'arc-stronghold': [
+      {
+        id: 'mission-raid-facility',
+        name: 'Raid ARC Facility',
+        type: 'mission',
+        x: 80,
+        y: 80,
+        difficulty: 'Legendary',
+        region: 'ARC Stronghold',
+        location: 'Primary Command Center',
+      },
+      {
+        id: 'arc-titan-spawn',
+        name: 'ARC Titan',
+        type: 'enemy',
+        x: 85,
+        y: 85,
+        difficulty: 'Legendary',
+        region: 'ARC Stronghold',
+      },
+    ],
+  }
+  
+  const zoneData = mockZones[mapID.toLowerCase()] || mockZones['surface']
+  
+  return {
+    data: zoneData,
+    mapInfo: {
+      id: mapID,
+      name: mapID.charAt(0).toUpperCase() + mapID.slice(1).replace(/-/g, ' '),
+    },
+  }
+}

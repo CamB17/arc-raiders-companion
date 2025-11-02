@@ -11,6 +11,7 @@ const Header = () => {
     { name: 'Missions', path: '/missions' },
     { name: 'Quests', path: '/quests' },
     { name: 'Crafting', path: '/crafting' },
+    { name: 'Maps', path: '/maps' },
   ]
   
   const isActive = (path: string) => {

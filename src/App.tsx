@@ -10,6 +10,7 @@ import QuestDetail from './pages/QuestDetail'
 import Crafting from './pages/Crafting'
 import Enemies from './pages/Enemies'
 import EnemyDetail from './pages/EnemyDetail'
+import Maps from './pages/Maps'
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path="/crafting" element={<Crafting />} />
         <Route path="/enemies" element={<Enemies />} />
         <Route path="/enemies/:id" element={<EnemyDetail />} />
+        <Route path="/maps" element={<Maps />} />
       </Routes>
     </Layout>
   )
