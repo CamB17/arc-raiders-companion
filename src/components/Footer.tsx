@@ -13,7 +13,7 @@ const Footer = () => {
               ARC RAIDERS DATABASE
             </h3>
             <p className="text-primary-200 text-sm max-w-md">
-              The ultimate companion for Arc Raiders players. Explore weapons, items, missions, and crafting recipes.
+              The ultimate companion for Arc Raiders players. Explore weapons, items, quests, and crafting recipes.
             </p>
             <div className="flex space-x-4 mt-4">
               <a 
@@ -38,7 +38,7 @@ const Footer = () => {
             <h4 className="font-semibold mb-3">Quick Links</h4>
             <ul className="space-y-2 text-sm text-primary-200">
               <li><a href="/items" className="hover:text-white transition-colors">Items</a></li>
-              <li><a href="/missions" className="hover:text-white transition-colors">Missions</a></li>
+              <li><a href="/quests" className="hover:text-white transition-colors">Quests</a></li>
               <li><a href="/crafting" className="hover:text-white transition-colors">Crafting</a></li>
             </ul>
           </div>

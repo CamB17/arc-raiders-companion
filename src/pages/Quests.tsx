@@ -102,26 +102,27 @@ const Quests = () => {
                     <div className="flex items-start gap-6 mb-6">
                       {/* Quest Image/Icon */}
                       <div className="flex-shrink-0">
-                        {questImage ? (
-                          <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center overflow-hidden">
-                            <img 
-                              src={questImage} 
-                              alt={quest.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none'
-                                e.currentTarget.parentElement!.querySelector('.fallback-icon')?.classList.remove('hidden')
-                              }}
-                            />
-                            <div className="fallback-icon hidden w-full h-full items-center justify-center">
-                              <Target className="w-12 h-12 text-white" />
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center">
-                            <Target className="w-12 h-12 text-white" />
-                          </div>
-                        )}
+                        <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center overflow-hidden relative">
+                          {questImage ? (
+                            <>
+                              <img 
+                                src={questImage} 
+                                alt={quest.name}
+                                className="max-w-full max-h-full object-contain drop-shadow-lg"
+                                onError={(e) => {
+                                  // Fallback if image fails to load
+                                  e.currentTarget.style.display = 'none'
+                                  e.currentTarget.parentElement!.querySelector('.fallback-icon')?.classList.remove('hidden')
+                                }}
+                              />
+                              <div className="fallback-icon hidden absolute inset-0 flex items-center justify-center">
+                                <Target className="w-16 h-16 text-white" />
+                              </div>
+                            </>
+                          ) : (
+                            <Target className="w-16 h-16 text-white" />
+                          )}
+                        </div>
                       </div>
                       
                       {/* Quest Info */}

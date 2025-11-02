@@ -5,7 +5,7 @@ import { MapPin, Target, Award, ArrowRight } from 'lucide-react'
 interface MapLocation {
   id: string
   name: string
-  type: 'mission' | 'quest'
+  type: 'quest'
   x: number // Percentage from left (0-100)
   y: number // Percentage from top (0-100)
   difficulty?: string
@@ -43,7 +43,7 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
       <div className="relative z-10 mb-4">
         <h3 className="text-xl font-techno font-bold text-navy-800 flex items-center gap-2">
           <MapPin className="w-5 h-5 text-accent-600" />
-          Mission & Quest Locations
+          Quest Locations
         </h3>
         <p className="text-sm text-navy-600 mt-1">Click on markers to view details</p>
       </div>
@@ -111,11 +111,7 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
                 
                 {/* Icon inside marker */}
                 <g transform={`translate(${x}, ${y})`} className="pointer-events-none">
-                  {location.type === 'mission' ? (
-                    <circle cx="0" cy="0" r="3" fill="white" />
-                  ) : (
-                    <circle cx="0" cy="0" r="3" fill="white" />
-                  )}
+                  <circle cx="0" cy="0" r="3" fill="white" />
                 </g>
                 
                 {/* Pulse animation for selected/hovered */}
@@ -166,11 +162,7 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
             }}
           >
             <div className="flex items-center gap-2 mb-1">
-              {hoveredLocation.type === 'mission' ? (
-                <Target className="w-4 h-4 text-accent-600" />
-              ) : (
-                <Award className="w-4 h-4 text-indigo-600" />
-              )}
+              <Award className="w-4 h-4 text-indigo-600" />
               <span className="font-semibold text-navy-800 text-sm">{hoveredLocation.name}</span>
             </div>
             {hoveredLocation.location && (
@@ -189,11 +181,7 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                {selectedLocation.type === 'mission' ? (
-                  <Target className="w-5 h-5 text-accent-600" />
-                ) : (
-                  <Award className="w-5 h-5 text-indigo-600" />
-                )}
+                <Award className="w-5 h-5 text-indigo-600" />
                 <h4 className="font-techno font-bold text-lg text-navy-800">{selectedLocation.name}</h4>
               </div>
               {selectedLocation.location && (
@@ -220,7 +208,7 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
             </button>
           </div>
           <Link
-            to={`/${selectedLocation.type === 'mission' ? 'missions' : 'quests'}/${selectedLocation.id}`}
+            to={`/quests/${selectedLocation.id}`}
             className="inline-flex items-center gap-2 px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors text-sm font-medium"
           >
             View Details
@@ -252,10 +240,6 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
           <span className="text-navy-600">Legendary</span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Target className="w-3 h-3 text-accent-600" />
-          <span className="text-navy-600">Mission</span>
-        </div>
-        <div className="flex items-center gap-2">
           <Award className="w-3 h-3 text-indigo-600" />
           <span className="text-navy-600">Quest</span>
         </div>

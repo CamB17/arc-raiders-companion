@@ -11,9 +11,9 @@ const Home = () => {
     },
     {
       icon: Target,
-      title: 'MISSIONS',
-      description: 'View objectives and rewards of available missions',
-      link: '/missions',
+      title: 'QUESTS',
+      description: 'View objectives and rewards of available quests',
+      link: '/quests',
     },
     {
       icon: Wrench,
