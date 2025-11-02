@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Target, Wrench, Package } from 'lucide-react'
+import { Target, Wrench, Package, User } from 'lucide-react'
 
 const Home = () => {
   const features = [
@@ -14,6 +14,12 @@ const Home = () => {
       title: 'QUESTS',
       description: 'View objectives and rewards of available quests',
       link: '/quests',
+    },
+    {
+      icon: User,
+      title: 'TRADERS',
+      description: 'Explore NPC traders and what they sell',
+      link: '/traders',
     },
     {
       icon: Wrench,
@@ -97,7 +103,7 @@ const Home = () => {
       {/* Features Section */}
       <section className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {features.map((feature) => (
               <Link
                 key={feature.title}

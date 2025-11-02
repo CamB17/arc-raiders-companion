@@ -321,6 +321,69 @@ export interface ArcRaidersArc {
   [key: string]: any
 }
 
+export interface ArcRaidersTrader {
+  id: string
+  name: string
+  description?: string
+  
+  // Images
+  avatar?: string
+  image?: string
+  imageUrl?: string
+  icon?: string
+  thumbnail?: string
+  
+  // Location info
+  location?: string
+  region?: string
+  
+  // Trader type/category
+  type?: string
+  category?: string
+  
+  // Items sold by this trader
+  items?: Array<{
+    item_id?: string
+    item?: string
+    id?: string
+    name?: string
+    price?: number
+    currency?: string
+    [key: string]: any
+  }>
+  sells?: Array<{
+    item_id?: string
+    item?: string
+    id?: string
+    name?: string
+    price?: number
+    currency?: string
+    [key: string]: any
+  }>
+  
+  // Quests provided by this trader
+  quests?: Array<{
+    quest_id?: string
+    quest?: string
+    id?: string
+    name?: string
+    [key: string]: any
+  }>
+  provides_quests?: Array<{
+    quest_id?: string
+    quest?: string
+    id?: string
+    name?: string
+    [key: string]: any
+  }>
+  
+  // Additional metadata
+  notes?: string
+  tags?: string[]
+  
+  [key: string]: any
+}
+
 /**
  * Hook to fetch data from the Arc Raiders API
  * @param endpoint - The API endpoint to fetch from (e.g., 'items', 'missions', 'recipes')
@@ -1070,6 +1133,532 @@ export const useArc = (id: string) => {
  */
 export const useEnemy = (id: string) => {
   return useArc(id)
+}
+
+/**
+ * Hook to fetch all traders with pagination and filtering
+ */
+export const useTraders = (params?: {
+  page?: number
+  limit?: number
+  id?: string
+  type?: string
+  location?: string
+  region?: string
+  search?: string
+  includeItems?: boolean
+  includeQuests?: boolean
+}) => {
+  const defaultParams = {
+    page: 1,
+    limit: 100,
+    includeItems: true,
+    includeQuests: true,
+    ...params,
+  }
+  
+  return useQuery<PaginatedResponse<ArcRaidersTrader>>({
+    queryKey: ['arc-raiders', 'traders', defaultParams],
+    queryFn: async () => {
+      // Try multiple possible endpoint names
+      const endpoints = ['traders', 'trader', 'vendors', 'merchants', 'npc']
+      
+      for (const endpoint of endpoints) {
+        try {
+          // For traders endpoint, try with minimal params first
+          // The API might not support all query parameters yet
+          const params = endpoint === 'traders' 
+            ? {} // Try without params first for traders endpoint
+            : defaultParams
+          
+          console.log(`Attempting to fetch from ${BASE_URL}/${endpoint}`, params)
+          
+          const response = await axios.get(`${BASE_URL}/${endpoint}`, {
+            params,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            timeout: 15000,
+          })
+          
+          // Handle different response structures
+          if (response.data) {
+            // API returns: { success: boolean, data: Object mapping trader names to item inventories }
+            // Check if response.data.data is an object (not array) - this is the traders mapping
+            // Also check for success field (optional - API might include it)
+            if ((response.data.success !== false) && response.data.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+              // Convert object mapping to array of traders
+              const tradersArray: ArcRaidersTrader[] = Object.entries(response.data.data).map(([traderName, items]: [string, any]) => {
+                // Items are already arrays from the API
+                let itemsArray: any[] = []
+                
+                if (Array.isArray(items)) {
+                  // Items are already in array format with full item details
+                  itemsArray = items.map((item: any) => ({
+                    item_id: item.id || item.item_id,
+                    id: item.id || item.item_id,
+                    item: item.id || item.item_id,
+                    name: item.name,
+                    price: item.trader_price !== null && item.trader_price !== undefined 
+                      ? item.trader_price 
+                      : (item.price || item.value),
+                    currency: item.currency || 'raider_coins',
+                    icon: item.icon,
+                    image: item.icon || item.image || item.imageUrl,
+                    rarity: item.rarity,
+                    item_type: item.item_type,
+                    description: item.description,
+                    value: item.value,
+                    ...item, // Spread all other properties
+                  }))
+                } else if (items && typeof items === 'object') {
+                  // If items is an object, convert to array (fallback for different API formats)
+                  itemsArray = Object.entries(items).map(([itemId, itemData]: [string, any]) => {
+                    if (typeof itemData === 'object') {
+                      return {
+                        item_id: itemId,
+                        id: itemId,
+                        item: itemId,
+                        name: itemData.name || itemId,
+                        price: itemData.trader_price !== null && itemData.trader_price !== undefined
+                          ? itemData.trader_price
+                          : (itemData.price || itemData.value),
+                        currency: itemData.currency || 'raider_coins',
+                        icon: itemData.icon,
+                        image: itemData.icon || itemData.image || itemData.imageUrl,
+                        rarity: itemData.rarity,
+                        item_type: itemData.item_type,
+                        description: itemData.description,
+                        value: itemData.value,
+                        ...itemData,
+                      }
+                    }
+                    return {
+                      item_id: itemId,
+                      id: itemId,
+                      item: itemId,
+                      name: itemId,
+                      price: itemData,
+                    }
+                  })
+                }
+                
+                // Create trader object from name
+                // Use trader name as ID (slugify it for URL-friendly ID)
+                const traderId = traderName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+                
+                // Construct trader image URL - API uses CDN pattern
+                // Try: https://cdn.metaforge.app/arc-raiders/traders/{trader-id}.webp
+                const traderImageUrl = `https://cdn.metaforge.app/arc-raiders/traders/${traderId}.webp`
+                const traderImageUrlPng = `https://cdn.metaforge.app/arc-raiders/traders/${traderId}.png`
+                
+                return {
+                  id: traderId,
+                  name: traderName,
+                  items: itemsArray,
+                  sells: itemsArray, // Alias for items
+                  // Add image URLs - will try webp first, fallback to png
+                  avatar: traderImageUrl,
+                  image: traderImageUrl,
+                  imageUrl: traderImageUrl,
+                  icon: traderImageUrl,
+                  thumbnail: traderImageUrl,
+                  // Store both formats for fallback
+                  _imageUrls: [traderImageUrl, traderImageUrlPng],
+                } as ArcRaidersTrader
+              })
+              
+              console.log(`✓ Successfully fetched ${tradersArray.length} traders from ${endpoint}`)
+              return {
+                data: tradersArray,
+                pagination: {
+                  page: defaultParams.page || 1,
+                  limit: defaultParams.limit || 100,
+                  total: tradersArray.length,
+                  totalPages: 1,
+                  hasNextPage: false,
+                  hasPrevPage: false,
+                },
+              }
+            }
+            // If response is already paginated
+            if (response.data.data && response.data.pagination && Array.isArray(response.data.data)) {
+              console.log(`✓ Successfully fetched ${response.data.data.length} traders from ${endpoint}`)
+              return response.data
+            }
+            // If response.data is an array (check this first before checking response.data.data)
+            if (Array.isArray(response.data)) {
+              console.log(`✓ Successfully fetched ${response.data.length} traders from ${endpoint}`)
+              return {
+                data: response.data,
+                pagination: {
+                  page: defaultParams.page || 1,
+                  limit: defaultParams.limit || 100,
+                  total: response.data.length,
+                  totalPages: 1,
+                  hasNextPage: false,
+                  hasPrevPage: false,
+                },
+              }
+            }
+            // If response is a single object (when id is specified)
+            if (response.data.id && !response.data.data) {
+              return {
+                data: [response.data],
+                pagination: {
+                  page: 1,
+                  limit: 1,
+                  total: 1,
+                  totalPages: 1,
+                  hasNextPage: false,
+                  hasPrevPage: false,
+                },
+              }
+            }
+            // Handle empty object or empty array in data field
+            if (response.data.data && Array.isArray(response.data.data)) {
+              console.log(`✓ Successfully fetched ${response.data.data.length} traders from ${endpoint}`)
+              return {
+                data: response.data.data,
+                pagination: response.data.pagination || {
+                  page: defaultParams.page || 1,
+                  limit: defaultParams.limit || 100,
+                  total: response.data.data.length,
+                  totalPages: 1,
+                  hasNextPage: false,
+                  hasPrevPage: false,
+                },
+              }
+            }
+          }
+          
+          // If we get here and have data but couldn't parse it, continue to next endpoint
+          if (response.status === 200 && response.data !== undefined) {
+            console.warn(`⚠ Unexpected response format from ${endpoint}:`, response.data)
+            continue
+          }
+        } catch (error: any) {
+          // Log the error for debugging
+          if (endpoint === endpoints[0]) {
+            console.log(`⚠ Failed to fetch from ${endpoint}:`, error.response?.status || error.code, error.message)
+          }
+          
+          // If it's a 404 or endpoint doesn't exist, try next endpoint
+          if (error.response?.status === 404 || error.code === 'ERR_BAD_REQUEST') {
+            continue
+          }
+          // For network errors or other issues, try next endpoint
+          continue
+        }
+      }
+      
+      // If all endpoints fail, return empty response instead of throwing
+      console.warn('⚠ No traders endpoint found. Returning empty response.')
+      return {
+        data: [],
+        pagination: {
+          page: defaultParams.page || 1,
+          limit: defaultParams.limit || 100,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      }
+    },
+  })
+}
+
+/**
+ * Hook to fetch a specific trader by ID
+ */
+export const useTrader = (id: string) => {
+  return useQuery<ArcRaidersTrader>({
+    queryKey: ['arc-raiders', 'traders', id],
+    queryFn: async () => {
+      // Try multiple possible endpoint names
+      const endpoints = ['traders', 'trader', 'vendors', 'merchants', 'npc']
+      
+      for (const endpoint of endpoints) {
+        try {
+          const response = await axios.get(`${BASE_URL}/${endpoint}`, {
+            params: { 
+              id,
+              includeItems: true,
+              includeQuests: true,
+            },
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            timeout: 15000,
+          })
+          
+          // Handle different response structures
+          let traderData = null
+          
+          // API returns: { success: boolean, data: Object mapping trader names to item inventories }
+          // Check if response.data.data is an object (not array) - this is the traders mapping
+          if (response.data?.data && typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+            // Convert trader name to ID (slugify) and find matching trader
+            // The id parameter might be a slugified name or the actual name
+            const tradersMap = response.data.data as Record<string, any>
+            
+            // Try to find trader by matching ID with slugified name or exact name
+            for (const [traderName, items] of Object.entries(tradersMap)) {
+              const traderId = traderName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+              
+              if (traderId === id || traderName.toLowerCase() === id.toLowerCase() || traderName === id) {
+                // Found matching trader, convert to trader object
+                let itemsArray = []
+                if (Array.isArray(items)) {
+                  // Items are already in array format with full item details
+                  itemsArray = items.map((item: any) => ({
+                    item_id: item.id || item.item_id,
+                    id: item.id || item.item_id,
+                    item: item.id || item.item_id,
+                    name: item.name,
+                    price: item.trader_price !== null && item.trader_price !== undefined 
+                      ? item.trader_price 
+                      : (item.price || item.value),
+                    currency: item.currency || 'raider_coins',
+                    icon: item.icon,
+                    image: item.icon || item.image || item.imageUrl,
+                    rarity: item.rarity,
+                    item_type: item.item_type,
+                    description: item.description,
+                    value: item.value,
+                    ...item, // Spread all other properties
+                  }))
+                } else if (items && typeof items === 'object') {
+                  // If items is an object, convert to array
+                  itemsArray = Object.entries(items).map(([itemId, itemData]: [string, any]) => {
+                    if (typeof itemData === 'object') {
+                      return {
+                        item_id: itemId,
+                        id: itemId,
+                        item: itemId,
+                        name: itemData.name || itemId,
+                        price: itemData.trader_price !== null && itemData.trader_price !== undefined
+                          ? itemData.trader_price
+                          : (itemData.price || itemData.value),
+                        currency: itemData.currency || 'raider_coins',
+                        icon: itemData.icon,
+                        image: itemData.icon || itemData.image || itemData.imageUrl,
+                        rarity: itemData.rarity,
+                        item_type: itemData.item_type,
+                        description: itemData.description,
+                        value: itemData.value,
+                        ...itemData,
+                      }
+                    }
+                    return {
+                      item_id: itemId,
+                      id: itemId,
+                      item: itemId,
+                      name: itemId,
+                      price: itemData,
+                    }
+                  })
+                }
+                
+                // Construct trader image URL - API uses CDN pattern
+                const traderImageUrl = `https://cdn.metaforge.app/arc-raiders/traders/${traderId}.webp`
+                const traderImageUrlPng = `https://cdn.metaforge.app/arc-raiders/traders/${traderId}.png`
+                
+                traderData = {
+                  id: traderId,
+                  name: traderName,
+                  items: itemsArray,
+                  sells: itemsArray, // Alias for items
+                  // Add image URLs
+                  avatar: traderImageUrl,
+                  image: traderImageUrl,
+                  imageUrl: traderImageUrl,
+                  icon: traderImageUrl,
+                  thumbnail: traderImageUrl,
+                  _imageUrls: [traderImageUrl, traderImageUrlPng],
+                } as ArcRaidersTrader
+                break
+              }
+            }
+            
+            if (traderData) {
+              console.log(`✓ Successfully fetched trader: ${id} from ${endpoint}`)
+              return traderData
+            }
+          }
+          
+          // Check if response.data is directly the trader object
+          if (response.data && !response.data.data && response.data.id) {
+            traderData = response.data
+          }
+          // Check if response.data.data is an array
+          else if (response.data?.data?.[0]) {
+            traderData = response.data.data[0]
+          }
+          // Check if response.data.data is the object itself
+          else if (response.data?.data && response.data.data.id) {
+            traderData = response.data.data
+          }
+          // Check if response.data is an array
+          else if (Array.isArray(response.data) && response.data.length > 0) {
+            traderData = response.data.find((t: any) => t.id === id) || response.data[0]
+          }
+          
+          if (traderData) {
+            console.log(`✓ Successfully fetched trader: ${id} from ${endpoint}`)
+            return traderData
+          }
+        } catch (error: any) {
+          // If it's a 404 or endpoint doesn't exist, try next endpoint
+          if (error.response?.status === 404 || error.code === 'ERR_BAD_REQUEST') {
+            continue
+          }
+          // For other errors, log and try next endpoint
+          if (endpoint === endpoints[0]) {
+            console.warn(`⚠ Failed to fetch trader from ${endpoint}, trying alternatives...`, error.message)
+          }
+          continue
+        }
+      }
+      
+      // If all endpoints fail, throw error
+      console.error(`✗ Failed to fetch trader: ${id} from all endpoints`)
+      throw new Error(`Trader not found: ${id}`)
+    },
+    enabled: !!id,
+  })
+}
+
+/**
+ * Utility function to link quests to traders
+ * Matches traders based on trader names or quest names
+ */
+export function linkQuestsToTraders(
+  quests: ArcRaidersQuest[],
+  traders: ArcRaidersTrader[]
+): ArcRaidersQuest[] {
+  // Create a map of trader names (normalized) to trader objects
+  const tradersByName = new Map<string, ArcRaidersTrader>()
+  traders.forEach(trader => {
+    // Multiple variations of trader name for matching
+    const normalizedName = trader.name.toLowerCase().trim()
+    tradersByName.set(normalizedName, trader)
+    // Also store by ID
+    if (trader.id) {
+      tradersByName.set(trader.id.toLowerCase(), trader)
+    }
+  })
+  
+  // Known trader-quest relationships (can be expanded)
+  const traderQuestMapping: Record<string, string[]> = {
+    'apollo': [], // Apollo - likely gives tactical/utility quests
+    'celeste': [], // Celeste - materials trader
+    'lance': [], // Lance - medical/combat trader
+    'shani': [], // Shani - keys/rare items trader
+    'tianwen': [], // TianWen - weapons/modifications trader
+  }
+  
+  return quests.map(quest => {
+    // Check if quest already has trader info
+    if (quest.trader || quest.giver || quest.provider) {
+      return quest
+    }
+    
+    // Try to match quest to trader based on quest name patterns
+    const questNameLower = quest.name.toLowerCase()
+    
+    // Match by trader name in quest name or description
+    let matchedTrader: ArcRaidersTrader | null = null
+    
+    // Check each trader name
+    for (const [traderName, trader] of tradersByName) {
+      // If quest name or description mentions trader name
+      if (
+        questNameLower.includes(traderName) ||
+        quest.description?.toLowerCase().includes(traderName)
+      ) {
+        matchedTrader = trader
+        break
+      }
+    }
+    
+    // If no match found, try pattern matching
+    // Apollo - tactical, utility, gadgets
+    if (!matchedTrader && (
+      questNameLower.includes('tactical') ||
+      questNameLower.includes('utility') ||
+      questNameLower.includes('gadget') ||
+      questNameLower.includes('zipline') ||
+      questNameLower.includes('grenade')
+    )) {
+      matchedTrader = tradersByName.get('apollo') || null
+    }
+    
+    // Celeste - materials, resources
+    if (!matchedTrader && (
+      questNameLower.includes('material') ||
+      questNameLower.includes('resource') ||
+      questNameLower.includes('harvest') ||
+      questNameLower.includes('collect')
+    )) {
+      matchedTrader = tradersByName.get('celeste') || null
+    }
+    
+    // Lance - medical, combat, shield
+    if (!matchedTrader && (
+      questNameLower.includes('medical') ||
+      questNameLower.includes('bandage') ||
+      questNameLower.includes('shield') ||
+      questNameLower.includes('combat') ||
+      questNameLower.includes('augment')
+    )) {
+      matchedTrader = tradersByName.get('lance') || null
+    }
+    
+    // Shani - keys, rare items
+    if (!matchedTrader && (
+      questNameLower.includes('key') ||
+      questNameLower.includes('hatch') ||
+      questNameLower.includes('rare')
+    )) {
+      matchedTrader = tradersByName.get('shani') || null
+    }
+    
+    // TianWen - weapons, modifications
+    if (!matchedTrader && (
+      questNameLower.includes('weapon') ||
+      questNameLower.includes('modification') ||
+      questNameLower.includes('ammo') ||
+      questNameLower.includes('grip') ||
+      questNameLower.includes('magazine')
+    )) {
+      matchedTrader = tradersByName.get('tianwen') || null
+    }
+    
+    // If trader found, add it to quest
+    if (matchedTrader) {
+      return {
+        ...quest,
+        trader: {
+          name: matchedTrader.name,
+          avatar: matchedTrader.avatar || matchedTrader.image || matchedTrader.icon,
+          image: matchedTrader.image || matchedTrader.avatar || matchedTrader.icon,
+          icon: matchedTrader.icon || matchedTrader.image || matchedTrader.avatar,
+        },
+        giver: {
+          name: matchedTrader.name,
+          avatar: matchedTrader.avatar || matchedTrader.image || matchedTrader.icon,
+          image: matchedTrader.image || matchedTrader.avatar || matchedTrader.icon,
+          icon: matchedTrader.icon || matchedTrader.image || matchedTrader.avatar,
+        },
+      }
+    }
+    
+    return quest
+  })
 }
 
 /**
