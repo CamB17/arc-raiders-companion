@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useQuest } from '../hooks/useArcRaidersApi'
+import { useQuest, useTraders, linkQuestsToTraders } from '../hooks/useArcRaidersApi'
 import { ArrowLeft, Target, Award, MapPin, Clock, Users, Star, Tag, Package, Lock, Unlock, FileText, CheckCircle, Link2, ArrowRight } from 'lucide-react'
 import type { ArcRaidersQuest } from '../hooks/useArcRaidersApi'
 
@@ -41,7 +41,12 @@ const formatDuration = (seconds?: number) => {
 
 const QuestDetail = () => {
   const { id } = useParams<{ id: string }>()
-  const { data: quest, isLoading, error } = useQuest(id || '')
+  const { data: questRaw, isLoading, error } = useQuest(id || '')
+  const { data: tradersResponse } = useTraders()
+  const traders = tradersResponse?.data || []
+  
+  // Link quest to traders
+  const quest = questRaw ? linkQuestsToTraders([questRaw], traders)[0] || questRaw : null
   
   if (isLoading) {
     return (

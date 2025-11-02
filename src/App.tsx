@@ -8,6 +8,8 @@ import QuestDetail from './pages/QuestDetail'
 import Crafting from './pages/Crafting'
 import Enemies from './pages/Enemies'
 import EnemyDetail from './pages/EnemyDetail'
+import Traders from './pages/Traders'
+import TraderDetail from './pages/TraderDetail'
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         <Route path="/crafting" element={<Crafting />} />
         <Route path="/enemies" element={<Enemies />} />
         <Route path="/enemies/:id" element={<EnemyDetail />} />
+        <Route path="/traders" element={<Traders />} />
+        <Route path="/traders/:id" element={<TraderDetail />} />
       </Routes>
     </Layout>
   )
