@@ -1,6 +1,9 @@
 import { useParams, Link } from 'react-router-dom'
-import { useItem } from '../hooks/useArcRaidersApi'
-import { ArrowLeft, Weight, Coins, Package, User, TrendingUp, Recycle } from 'lucide-react'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useItem, useArcs, findArcsThatDropItem } from '../hooks/useArcRaidersApi'
+import { ArrowLeft, Weight, Coins, Package, User, TrendingUp, Recycle, Target } from 'lucide-react'
+import ItemPreview from '../components/ItemPreview'
 
 const getRarityColor = (rarity?: string) => {
   const colors: Record<string, string> = {
@@ -30,6 +33,35 @@ const getItemTypeColor = (type?: string) => {
 const ItemDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { data: item, isLoading, error } = useItem(id || '')
+  const { data: arcsResponse } = useArcs()
+  const arcs = arcsResponse?.data || []
+  
+  // State for hover preview
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null)
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 })
+  
+  // Find which arcs drop this item
+  const arcsThatDrop = item && id ? findArcsThatDropItem(id, item, arcs) : []
+  
+  // Helper function to get item ID from breakdown item
+  const getItemIdFromBreakdown = (breakdownItem: any): string | null => {
+    // Try various ID fields first
+    if (breakdownItem.item_id) return breakdownItem.item_id
+    if (breakdownItem.item) return breakdownItem.item
+    if (breakdownItem.id) return breakdownItem.id
+    
+    // Try to extract ID from nested component
+    if (breakdownItem.component?.id) return breakdownItem.component.id
+    if (breakdownItem.component?.item_id) return breakdownItem.component.item_id
+    
+    // As a fallback, try to convert name to slug format
+    const name = breakdownItem.name || breakdownItem.item_name
+    if (name) {
+      return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    }
+    
+    return null
+  }
   
   if (isLoading) {
     return (
@@ -79,8 +111,38 @@ const ItemDetail = () => {
   
   // Get crafting materials - prioritize components from API
   const neededToCraft = item.components || item.crafting?.requires || item.requiredMaterials || []
+  
+  // Debug logging to see component structure
+  if (neededToCraft.length > 0) {
+    console.log('Crafting components:', neededToCraft)
+    neededToCraft.forEach((comp: any, idx: number) => {
+      console.log(`Component ${idx}:`, comp)
+    })
+  }
+  
   const crafting = item.crafting || {}
   const traders = item.traders || item.soldByTraders || []
+  
+  // Get recycle breakdown - check multiple possible field names
+  // API uses 'recycle_components' field
+  const recycleBreakdown = item.recycle_components || item.recycle_breakdown || item.recycleBreakdown || item.recycle?.breakdown || item.recycle?.components || []
+  
+  // Debug log to see the structure
+  if (recycleBreakdown.length > 0) {
+    console.log('Recycle breakdown items:', recycleBreakdown)
+    recycleBreakdown.forEach((item: any, idx: number) => {
+      console.log(`Breakdown item ${idx}:`, item)
+    })
+  }
+  
+  const breakdownTotal = recycleBreakdown.reduce((sum: number, item: any) => {
+    const itemValue = item.value || 0
+    const quantity = item.quantity || 1
+    return sum + (itemValue * quantity)
+  }, 0)
+  
+  // If breakdown total is 0 but we have recycle value, use recycle value as total
+  const displayTotal = breakdownTotal > 0 ? breakdownTotal : (recycleValue || 0)
   
   // Get the best available image - API uses 'icon'
   const itemImage = item.icon || item.image || item.imageUrl || item.thumbnail
@@ -265,26 +327,153 @@ const ItemDetail = () => {
                     </thead>
                     <tbody>
                       {neededToCraft.map((material: any, index: number) => {
-                        const materialImage = material.icon || material.image || material.imageUrl
-                        const materialName = material.name || material.item
-                        const materialQuantity = material.quantity || material.count || 1
-                        const materialType = material.item_type || material.type || 'Material'
+                        // Check all possible field names for image
+                        const materialImage = material.icon 
+                          || material.image 
+                          || material.imageUrl 
+                          || material.image_url
+                          || material.thumbnail
+                          || material.thumbnail_url
+                          || material.component?.icon
+                          || material.component?.image
+                          || material.item?.icon
+                          || material.item?.image
+                          
+                        // Check all possible field names for name
+                        const materialName = material.name 
+                          || material.item_name
+                          || material.component_name
+                          || material.item?.name
+                          || material.item?.item_name
+                          || material.component?.name
+                          || material.component?.item_name
+                          || material.item
+                          || material.item_id
+                          || material.id
+                          || 'Unknown Material'
+                          
+                        const materialQuantity = material.quantity || material.count || material.amount || 1
+                        const materialType = material.item_type || material.type || material.component?.item_type || 'Material'
+                        
+                        // Debug logging if name or image is missing
+                        if (!materialName || materialName === 'Unknown Material' || !materialImage) {
+                          console.log('Crafting component structure:', material)
+                        }
+                        
+                        // Get item ID for linking
+                        const materialId = material.item_id 
+                          || material.item 
+                          || material.id
+                          || material.component?.id
+                          || material.component?.item_id
+                          || (materialName && materialName !== 'Unknown Material' ? materialName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : null)
+                        
+                        const handleCraftMaterialMouseEnter = (e: React.MouseEvent) => {
+                          if (materialId) {
+                            setHoveredItemId(materialId)
+                            setHoverPosition({ x: e.clientX, y: e.clientY })
+                          }
+                        }
+                        
+                        const handleCraftMaterialMouseLeave = () => {
+                          setHoveredItemId(null)
+                        }
+                        
+                        const handleCraftMaterialMouseMove = (e: React.MouseEvent) => {
+                          if (hoveredItemId === materialId) {
+                            setHoverPosition({ x: e.clientX, y: e.clientY })
+                          }
+                        }
+                        
+                        const cellContent = (
+                          <div className="flex items-center gap-3">
+                            {materialImage ? (
+                              <img 
+                                src={materialImage} 
+                                alt={materialName} 
+                                className="w-10 h-10 object-contain flex-shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                  // Show fallback icon
+                                  const fallback = e.currentTarget.parentElement?.querySelector('.material-fallback')
+                                  if (fallback) fallback.classList.remove('hidden')
+                                }}
+                              />
+                            ) : null}
+                            <div className={`material-fallback w-10 h-10 bg-primary-100 rounded flex items-center justify-center flex-shrink-0 ${materialImage ? 'hidden' : ''}`}>
+                              <span className="text-lg font-techno text-navy-600">
+                                {materialName?.charAt(0) || '?'}
+                              </span>
+                            </div>
+                            <span className="text-navy-800 font-medium">{materialName}</span>
+                          </div>
+                        )
                         
                         return (
-                          <tr key={index} className="border-b border-primary-100 hover:bg-primary-50">
+                          <tr 
+                            key={index} 
+                            className="border-b border-primary-100 hover:bg-primary-50"
+                          >
                             <td className="py-3 px-2 text-navy-800 font-bold">{materialQuantity}</td>
                             <td className="py-3 px-2">
-                              <div className="flex items-center gap-3">
-                                {materialImage && (
-                                  <img 
-                                    src={materialImage} 
-                                    alt={materialName} 
-                                    className="w-10 h-10 object-contain"
-                                    onError={(e) => e.currentTarget.style.display = 'none'}
-                                  />
-                                )}
-                                <span className="text-navy-800 font-medium">{materialName}</span>
-                              </div>
+                              {materialId ? (
+                                <Link 
+                                  to={`/items/${materialId}`}
+                                  className="block cursor-pointer group"
+                                  onMouseEnter={handleCraftMaterialMouseEnter}
+                                  onMouseLeave={handleCraftMaterialMouseLeave}
+                                  onMouseMove={handleCraftMaterialMouseMove}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    {materialImage ? (
+                                      <img 
+                                        src={materialImage} 
+                                        alt={materialName} 
+                                        className="w-10 h-10 object-contain flex-shrink-0"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none'
+                                          const fallback = e.currentTarget.parentElement?.querySelector('.material-fallback')
+                                          if (fallback) fallback.classList.remove('hidden')
+                                        }}
+                                      />
+                                    ) : null}
+                                    <div className={`material-fallback w-10 h-10 bg-primary-100 rounded flex items-center justify-center flex-shrink-0 ${materialImage ? 'hidden' : ''}`}>
+                                      <span className="text-lg font-techno text-navy-600">
+                                        {materialName?.charAt(0) || '?'}
+                                      </span>
+                                    </div>
+                                    <span className="text-navy-800 font-medium group-hover:text-accent-600 transition-colors">{materialName}</span>
+                                  </div>
+                                </Link>
+                              ) : (
+                                <div
+                                  className="cursor-pointer group"
+                                  onMouseEnter={handleCraftMaterialMouseEnter}
+                                  onMouseLeave={handleCraftMaterialMouseLeave}
+                                  onMouseMove={handleCraftMaterialMouseMove}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    {materialImage ? (
+                                      <img 
+                                        src={materialImage} 
+                                        alt={materialName} 
+                                        className="w-10 h-10 object-contain flex-shrink-0"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none'
+                                          const fallback = e.currentTarget.parentElement?.querySelector('.material-fallback')
+                                          if (fallback) fallback.classList.remove('hidden')
+                                        }}
+                                      />
+                                    ) : null}
+                                    <div className={`material-fallback w-10 h-10 bg-primary-100 rounded flex items-center justify-center flex-shrink-0 ${materialImage ? 'hidden' : ''}`}>
+                                      <span className="text-lg font-techno text-navy-600">
+                                        {materialName?.charAt(0) || '?'}
+                                      </span>
+                                    </div>
+                                    <span className="text-navy-800 font-medium group-hover:text-accent-600 transition-colors">{materialName}</span>
+                                  </div>
+                                </div>
+                              )}
                             </td>
                             <td className="py-3 px-2 text-navy-600 text-sm">{materialType}</td>
                           </tr>
@@ -321,9 +510,109 @@ const ItemDetail = () => {
                 </div>
                 
                 {raiderCoins && recycleValue && raiderCoins !== recycleValue && (
-                  <p className="text-sm text-navy-600">
-                    When recycling, you will receive <span className="text-red-600 font-semibold">-{raiderCoins - recycleValue}</span> less Raider Coins.
+                  <p className="text-sm text-navy-600 mb-4">
+                    When recycling, you will receive{' '}
+                    {recycleValue > raiderCoins ? (
+                      <span className="text-green-600 font-semibold">+{recycleValue - raiderCoins}</span>
+                    ) : (
+                      <span className="text-red-600 font-semibold">-{raiderCoins - recycleValue}</span>
+                    )}{' '}
+                    {recycleValue > raiderCoins ? 'more' : 'less'} Raider Coins.
                   </p>
+                )}
+                
+                {/* Recycle Breakdown */}
+                {(recycleBreakdown.length > 0 || recycleValue) && (
+                  <div className="mt-4 pt-4 border-t border-primary-200">
+                    <h3 className="text-sm font-semibold text-navy-700 mb-3">Breakdown:</h3>
+                    <div className="space-y-2">
+                      {recycleBreakdown.length > 0 ? (
+                        recycleBreakdown.map((breakdownItem: any, index: number) => {
+                          // Handle different field name variations from API
+                          // Check all possible field names for item name
+                          const itemName = breakdownItem.name 
+                            || breakdownItem.item_name 
+                            || breakdownItem.item 
+                            || breakdownItem.item_id
+                            || breakdownItem.id
+                            || breakdownItem.component_name
+                            || breakdownItem.component?.name
+                            || breakdownItem.component?.item_name
+                            || 'Unknown Item'
+                          
+                          const quantity = breakdownItem.quantity || breakdownItem.count || breakdownItem.amount || 1
+                          const itemValue = breakdownItem.value || breakdownItem.price || 0
+                          const totalValue = itemValue * quantity
+                          const itemId = getItemIdFromBreakdown(breakdownItem)
+                          
+                          // Debug log to see what we're working with
+                          if (!itemName || itemName === 'Unknown Item') {
+                            console.log('Breakdown item structure:', breakdownItem)
+                          }
+                          
+                          const handleMouseEnter = (e: React.MouseEvent) => {
+                            if (itemId) {
+                              setHoveredItemId(itemId)
+                              setHoverPosition({ x: e.clientX, y: e.clientY })
+                            }
+                          }
+                          
+                          const handleMouseLeave = () => {
+                            setHoveredItemId(null)
+                          }
+                          
+                          const handleMouseMove = (e: React.MouseEvent) => {
+                            if (hoveredItemId === itemId) {
+                              setHoverPosition({ x: e.clientX, y: e.clientY })
+                            }
+                          }
+                          
+                          const linkContent = (
+                            <div 
+                              className="flex items-center justify-between text-sm cursor-pointer hover:text-accent-600 transition-colors"
+                              onMouseEnter={handleMouseEnter}
+                              onMouseLeave={handleMouseLeave}
+                              onMouseMove={handleMouseMove}
+                            >
+                              <span className="text-navy-700 hover:text-accent-600">
+                                {itemName} {quantity > 1 && <span className="text-navy-500">× {quantity}</span>}
+                              </span>
+                              {itemValue > 0 && (
+                                <span className="text-navy-600 font-medium">
+                                  {totalValue > itemValue ? `${itemValue} × ${quantity} = ${totalValue}` : itemValue}
+                                </span>
+                              )}
+                            </div>
+                          )
+                          
+                          // If we have an item ID, make it a link, otherwise just show the content
+                          if (itemId) {
+                            return (
+                              <Link 
+                                key={index} 
+                                to={`/items/${itemId}`}
+                                className="block"
+                              >
+                                {linkContent}
+                              </Link>
+                            )
+                          }
+                          
+                          return (
+                            <div key={index}>
+                              {linkContent}
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <div className="text-sm text-navy-600 italic">No breakdown available</div>
+                      )}
+                      <div className="flex items-center justify-between pt-2 mt-2 border-t border-primary-100">
+                        <span className="text-navy-800 font-bold">Total</span>
+                        <span className="text-navy-800 font-bold">{displayTotal}</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -365,6 +654,104 @@ const ItemDetail = () => {
               </div>
             )}
             
+            {/* Dropped By Arcs */}
+            {arcsThatDrop.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
+                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Dropped By Arcs
+                </h2>
+                <div className="space-y-4">
+                  {arcsThatDrop.map(({ arc, dropInfo }) => {
+                    const arcImage = arc.icon || arc.image || arc.imageUrl || arc.thumbnail
+                    const dropRate = dropInfo.drop_rate || dropInfo.chance || 0
+                    const dropRatePercent = (dropRate * 100).toFixed(1)
+                    const quantity = dropInfo.quantity || 1
+                    
+                    return (
+                      <div 
+                        key={arc.id}
+                        className="border border-primary-200 rounded-lg p-4 hover:bg-primary-50 transition-colors"
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Arc Image */}
+                          {arcImage && (
+                            <div className="flex-shrink-0">
+                              <img 
+                                src={arcImage} 
+                                alt={arc.name}
+                                className="w-16 h-16 object-contain rounded-lg bg-primary-100 p-2"
+                                onError={(e) => e.currentTarget.style.display = 'none'}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Arc Info */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-navy-800">{arc.name}</h3>
+                              {arc.difficulty && (
+                                <span className={`px-2 py-1 text-xs font-bold rounded ${getRarityColor(arc.difficulty)}`}>
+                                  {arc.difficulty}
+                                </span>
+                              )}
+                              {arc.type && (
+                                <span className="px-2 py-1 text-xs font-medium rounded bg-navy-100 text-navy-700">
+                                  {arc.type}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {arc.description && (
+                              <p className="text-sm text-navy-600 mb-2">{arc.description}</p>
+                            )}
+                            
+                            {/* Drop Info */}
+                            <div className="flex items-center gap-4 mt-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-navy-600">Drop Rate:</span>
+                                <span className="text-navy-800 font-bold">{dropRatePercent}%</span>
+                              </div>
+                              {quantity > 1 && (
+                                <>
+                                  <span className="text-navy-400">•</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-navy-600">Quantity:</span>
+                                    <span className="text-navy-800 font-bold">{quantity}</span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            
+                            {/* Arc Stats */}
+                            {(arc.health || arc.armor || arc.shield) && (
+                              <div className="flex items-center gap-4 mt-2 pt-2 border-t border-primary-100">
+                                {arc.health && (
+                                  <div className="text-xs text-navy-600">
+                                    <span className="font-semibold">HP:</span> {arc.health}
+                                  </div>
+                                )}
+                                {arc.armor && (
+                                  <div className="text-xs text-navy-600">
+                                    <span className="font-semibold">Armor:</span> {arc.armor}
+                                  </div>
+                                )}
+                                {arc.shield && (
+                                  <div className="text-xs text-navy-600">
+                                    <span className="font-semibold">Shield:</span> {arc.shield}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            
             {/* Used In Recipes */}
             {crafting.used_in && crafting.used_in.length > 0 && (
               <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
@@ -386,6 +773,12 @@ const ItemDetail = () => {
           </div>
         </div>
       </div>
+      
+      {/* Item Preview Portal - renders outside DOM hierarchy to prevent layout shifts */}
+      {hoveredItemId && typeof document !== 'undefined' && createPortal(
+        <ItemPreview itemId={hoveredItemId} position={hoverPosition} />,
+        document.body
+      )}
     </div>
   )
 }

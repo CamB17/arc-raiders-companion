@@ -5,6 +5,8 @@ import Items from './pages/Items'
 import ItemDetail from './pages/ItemDetail'
 import Missions from './pages/Missions'
 import Crafting from './pages/Crafting'
+import Enemies from './pages/Enemies'
+import EnemyDetail from './pages/EnemyDetail'
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
         <Route path="/items/:id" element={<ItemDetail />} />
         <Route path="/missions" element={<Missions />} />
         <Route path="/crafting" element={<Crafting />} />
+        <Route path="/enemies" element={<Enemies />} />
+        <Route path="/enemies/:id" element={<EnemyDetail />} />
       </Routes>
     </Layout>
   )
