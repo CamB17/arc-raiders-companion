@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion'
+
 interface CardProps {
   children: React.ReactNode
   className?: string
@@ -6,15 +8,17 @@ interface CardProps {
 
 const Card = ({ children, className = '', hover = false }: CardProps) => {
   return (
-    <div 
+    <motion.div
       className={`
         bg-white rounded-xl border border-primary-200 p-6
         ${hover ? 'hover:border-accent-400 hover:shadow-lg transition-all' : ''}
         ${className}
       `}
+      whileHover={hover ? { y: -4, scale: 1.02 } : {}}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     >
       {children}
-    </div>
+    </motion.div>
   )
 }
 

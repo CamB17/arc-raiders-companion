@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Search } from 'lucide-react'
+import { motion } from 'framer-motion'
 import SearchModal from './SearchModal'
 
 const Header = () => {
@@ -41,33 +42,52 @@ const Header = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center">
-              <span className="text-2xl font-techno font-bold text-navy-800 tracking-wider">
+              <motion.span
+                className="text-2xl font-techno font-bold text-navy-800 tracking-wider"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: 'spring', stiffness: 400 }}
+              >
                 ARC RAIDERS
-              </span>
+              </motion.span>
             </Link>
             
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              {navItems.map((item) => (
-                <Link
+              {navItems.map((item, index) => (
+                <motion.div
                   key={item.path}
-                  to={item.path}
-                  className={`text-sm font-medium transition-colors ${
-                    isActive(item.path)
-                      ? 'text-navy-800'
-                      : 'text-navy-600 hover:text-navy-800'
-                  }`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  {item.name}
-                </Link>
+                  <Link
+                    to={item.path}
+                    className={`text-sm font-medium transition-colors relative ${
+                      isActive(item.path)
+                        ? 'text-navy-800'
+                        : 'text-navy-600 hover:text-navy-800'
+                    }`}
+                  >
+                    {item.name}
+                    {isActive(item.path) && (
+                      <motion.div
+                        className="absolute -bottom-1 left-0 right-0 h-0.5 bg-accent-500"
+                        layoutId="activeTab"
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                  </Link>
+                </motion.div>
               ))}
             </nav>
             
             {/* Search Button */}
-            <button 
+            <motion.button
               onClick={() => setIsSearchOpen(true)}
               className="p-2 hover:bg-primary-100 rounded-lg transition-colors flex items-center gap-2 group"
               aria-label="Search"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               <Search className="w-5 h-5 text-navy-800" />
               <span className="hidden lg:inline text-xs text-navy-600 font-medium">
@@ -76,7 +96,7 @@ const Header = () => {
                 </kbd>
                 <kbd className="px-1.5 py-0.5 bg-white border border-primary-200 rounded text-xs">K</kbd>
               </span>
-            </button>
+            </motion.button>
           </div>
         </div>
       </header>

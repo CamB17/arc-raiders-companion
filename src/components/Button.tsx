@@ -1,4 +1,5 @@
 import { ButtonHTMLAttributes, forwardRef } from 'react'
+import { motion } from 'framer-motion'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline'
@@ -7,7 +8,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ children, variant = 'primary', size = 'md', className = '', ...props }, ref) => {
-    const baseClasses = 'font-semibold rounded-lg transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed'
+    const baseClasses = 'font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed'
     
     const variantClasses = {
       primary: 'bg-accent-500 hover:bg-accent-600 text-white shadow-md hover:shadow-lg',
@@ -22,13 +23,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
     
     return (
-      <button
+      <motion.button
         ref={ref}
         className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         {...props}
       >
         {children}
-      </button>
+      </motion.button>
     )
   }
 )
