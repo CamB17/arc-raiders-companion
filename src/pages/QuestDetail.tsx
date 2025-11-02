@@ -86,14 +86,6 @@ const QuestDetail = () => {
     )
   }
   
-  // Try to get image from quest, or fallback to trader/giver image
-  const questImage = quest.image || quest.imageUrl || quest.icon || quest.thumbnail
-  const traderImage = quest.trader?.avatar || quest.trader?.image || quest.trader?.icon || 
-                      quest.giver?.avatar || quest.giver?.image || quest.giver?.icon ||
-                      quest.provider?.avatar || quest.provider?.image || quest.provider?.icon
-  // Use trader image if quest doesn't have its own image
-  const displayImage = questImage || traderImage
-  
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -115,195 +107,123 @@ const QuestDetail = () => {
           <span className="text-navy-800 font-medium">{quest.name}</span>
         </div>
         
-        {/* Main Grid Layout */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - Quest Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden sticky top-6">
-              {/* Image - Shows trader/giver image if quest doesn't have one */}
-              <div className="bg-gradient-to-br from-indigo-500 to-indigo-700 p-8 flex items-center justify-center h-64 relative">
-                {displayImage ? (
-                  <>
-                    <img 
-                      src={displayImage} 
-                      alt={traderImage ? (quest.trader?.name || quest.giver?.name || quest.provider?.name || 'Quest Giver') : quest.name}
-                      className="max-h-full max-w-full object-contain drop-shadow-2xl"
-                      onError={(e) => {
-                        // Fallback if image fails to load
-                        e.currentTarget.style.display = 'none'
-                        e.currentTarget.parentElement!.querySelector('.fallback-icon')?.classList.remove('hidden')
-                      }}
-                    />
-                    <div className="fallback-icon hidden absolute inset-0 flex items-center justify-center">
-                      <div className="w-32 h-32 bg-white/30 rounded-lg flex items-center justify-center">
-                        <Target className="w-16 h-16 text-white" />
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="w-32 h-32 bg-white/30 rounded-lg flex items-center justify-center">
-                    <Target className="w-16 h-16 text-white" />
-                  </div>
-                )}
-                {traderImage && !questImage && (
-                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                    {quest.trader?.name || quest.giver?.name || quest.provider?.name || 'Quest Giver'}
-                  </div>
-                )}
-              </div>
-              
-              {/* Card Content */}
-              <div className="p-6 bg-primary-50">
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {quest.type && (
-                    <span className={`px-3 py-1 text-xs font-bold rounded ${getTypeColor(quest.type)}`}>
-                      {quest.type}
-                    </span>
-                  )}
-                  {quest.difficulty && (
-                    <span className={`px-3 py-1 text-xs font-bold rounded ${getDifficultyColor(quest.difficulty)}`}>
-                      {quest.difficulty}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Quest Chain Info */}
-                {quest.quest_chain && (
-                  <div className="mb-4 pb-4 border-b border-primary-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Link2 className="w-4 h-4 text-indigo-600" />
-                      <span className="text-xs font-semibold text-indigo-700 uppercase">Quest Chain</span>
-                    </div>
-                    <div className="text-sm text-navy-700 font-medium">{quest.quest_chain}</div>
-                    {quest.chain_position && (
-                      <div className="text-xs text-navy-500 mt-1">Position #{quest.chain_position}</div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Title */}
-                <h1 className="text-2xl font-techno font-bold text-navy-800 mb-3 uppercase">
-                  {quest.name}
-                </h1>
-                
-                {/* Description */}
-                {quest.description && (
-                  <p className="text-sm text-navy-600 mb-6 leading-relaxed">
-                    {quest.description}
-                  </p>
-                )}
-                
-                {/* Stats */}
-                <div className="space-y-3 mb-6">
-                  {quest.region && (
-                    <div className="flex justify-between text-sm items-center">
-                      <span className="text-navy-600 flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Region
-                      </span>
-                      <span className="text-navy-800 font-bold">{quest.region}</span>
-                    </div>
-                  )}
-                  
-                  {quest.location && (
-                    <div className="flex justify-between text-sm items-center">
-                      <span className="text-navy-600 flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Location
-                      </span>
-                      <span className="text-navy-800 font-bold text-right">{quest.location}</span>
-                    </div>
-                  )}
-                  
-                  {quest.duration && (
-                    <div className="flex justify-between text-sm items-center">
-                      <span className="text-navy-600 flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Duration
-                      </span>
-                      <span className="text-navy-800 font-bold">{formatDuration(quest.duration)}</span>
-                    </div>
-                  )}
-                  
-                  {(quest.min_players || quest.max_players) && (
-                    <div className="flex justify-between text-sm items-center">
-                      <span className="text-navy-600 flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Players
-                      </span>
-                      <span className="text-navy-800 font-bold">
-                        {quest.min_players || 1}-{quest.max_players || 4}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {quest.recommended_level && (
-                    <div className="flex justify-between text-sm items-center">
-                      <span className="text-navy-600 flex items-center gap-2">
-                        <Star className="w-4 h-4" />
-                        Recommended Level
-                      </span>
-                      <span className="text-navy-800 font-bold">{quest.recommended_level}</span>
-                    </div>
-                  )}
-                  
-                  {quest.required_level && (
-                    <div className="flex justify-between text-sm items-center">
-                      <span className="text-navy-600 flex items-center gap-2">
-                        <Lock className="w-4 h-4" />
-                        Required Level
-                      </span>
-                      <span className="text-navy-800 font-bold">{quest.required_level}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Tags */}
-                {quest.tags && quest.tags.length > 0 && (
-                  <div className="mb-6 pt-4 border-t border-primary-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Tag className="w-5 h-5 text-navy-600" />
-                      <h3 className="text-sm font-semibold text-navy-700 uppercase">Tags</h3>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {quest.tags.map((tag, idx) => (
-                        <span key={idx} className="px-3 py-1 text-xs bg-primary-100 text-primary-700 rounded font-medium">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Progress */}
-                {quest.progress !== undefined && (
-                  <div className="pt-4 border-t border-primary-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-navy-600">Progress</span>
-                      <span className="text-sm text-navy-800 font-bold">{quest.progress}%</span>
-                    </div>
-                    <div className="w-full bg-primary-200 rounded-full h-2">
-                      <div 
-                        className="bg-indigo-600 h-2 rounded-full transition-all"
-                        style={{ width: `${quest.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
-              </div>
+        {/* Modern Grid Mosaic Layout */}
+        <div className="max-w-7xl mx-auto">
+          {/* Hero Header - Arc Raiders Cyan Theme */}
+          <div className="bg-gradient-to-br from-navy-800 via-navy-700 to-navy-800 rounded-2xl shadow-2xl p-8 mb-6 text-white border-2 border-[#40EDCD]/30">
+            <h1 className="text-4xl md:text-5xl font-techno font-bold mb-4 drop-shadow-lg text-[#40EDCD]">
+              {quest.name}
+            </h1>
+            
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {quest.type && (
+                <span className="px-3 py-1.5 text-sm font-bold rounded-lg bg-[#40EDCD]/20 border border-[#40EDCD]/40 text-[#40EDCD]">
+                  {quest.type}
+                </span>
+              )}
+              {quest.difficulty && (
+                <span className="px-3 py-1.5 text-sm font-bold rounded-lg bg-[#FAD10B]/20 border border-[#FAD10B]/40 text-[#FAD10B]">
+                  {quest.difficulty}
+                </span>
+              )}
+              {quest.quest_chain && (
+                <span className="px-3 py-1.5 text-sm font-bold rounded-lg bg-[#FF003C]/20 border border-[#FF003C]/40 text-[#FF003C] flex items-center gap-1">
+                  <Link2 className="w-4 h-4" />
+                  {quest.quest_chain} {quest.chain_position && `#${quest.chain_position}`}
+                </span>
+              )}
             </div>
+            
+            {quest.description && (
+              <p className="text-lg text-white/90 leading-relaxed max-w-3xl">
+                {quest.description}
+              </p>
+            )}
           </div>
           
-          {/* Right Column - Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Quest Chain Navigation */}
+          {/* Stats Cards Grid - Arc Raiders Colors */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {/* XP Card - Cyan */}
+            <div className="bg-transparent rounded-xl p-4 shadow-lg border-2 border-[#40EDCD]">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <Star className="w-8 h-8 text-[#40EDCD]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-2xl font-bold text-[#40EDCD]">{(quest.xp || quest.experience || quest.exp || 0).toLocaleString()}</div>
+                  <div className="text-xs font-bold text-navy-600 uppercase tracking-wide">XP Reward</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Rewards Count Card - Accent Red */}
+            {quest.rewards && quest.rewards.length > 0 && (
+              <div className="bg-transparent rounded-xl p-4 shadow-lg border-2 border-[#FF003C]">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <Package className="w-8 h-8 text-[#FF003C]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-2xl font-bold text-[#FF003C]">{quest.rewards.length}</div>
+                    <div className="text-xs font-bold text-navy-600 uppercase tracking-wide">
+                      {quest.rewards.length === 1 ? 'Reward' : 'Rewards'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Objectives Count Card - Yellow */}
+            {quest.objectives && quest.objectives.length > 0 && (
+              <div className="bg-transparent rounded-xl p-4 shadow-lg border-2 border-[#FAD10B]">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <Target className="w-8 h-8 text-[#FAD10B]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-2xl font-bold text-[#FAD10B]">{quest.objectives.length}</div>
+                    <div className="text-xs font-bold text-navy-600 uppercase tracking-wide">
+                      {quest.objectives.length === 1 ? 'Objective' : 'Objectives'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Level Card - Navy with Cyan accent */}
+            {(quest.recommended_level || quest.required_level) && (
+              <div className="bg-transparent rounded-xl p-4 shadow-lg border-2 border-navy-600">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <Star className="w-8 h-8 text-navy-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-2xl font-bold text-navy-700">
+                      {quest.required_level || quest.recommended_level}
+                    </div>
+                    <div className="text-xs font-bold text-navy-600 uppercase tracking-wide">
+                      {quest.required_level ? 'Required Level' : 'Recommended'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Content Grid Mosaic */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Quest Chain Navigation - Arc Raiders Colors */}
             {(quest.previous_quest || quest.next_quest) && (
-              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
-                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
-                  <Link2 className="w-5 h-5" />
-                  Quest Chain Navigation
-                </h2>
+              <div className="md:col-span-2 bg-gradient-to-r from-navy-50 via-[#40EDCD]/5 to-navy-50 rounded-xl shadow-lg border-2 border-[#40EDCD]/30 p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-3 bg-gradient-to-br from-[#40EDCD] to-[#2BC9B0] rounded-lg">
+                    <Link2 className="w-6 h-6 text-navy-900" />
+                  </div>
+                  <h2 className="text-2xl font-techno font-bold text-navy-800">
+                    Quest Chain Navigation
+                  </h2>
+                </div>
                 <div className="flex items-center justify-between gap-4">
                   {quest.previous_quest ? (
                     <Link
@@ -340,11 +260,15 @@ const QuestDetail = () => {
             
             {/* Objectives */}
             {quest.objectives && quest.objectives.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
-                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  Objectives
-                </h2>
+              <div className="bg-white rounded-xl shadow-lg border-2 border-navy-800 p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-3 bg-gradient-to-br from-[#FAD10B] to-[#E0BC0A] rounded-lg">
+                    <Target className="w-6 h-6 text-navy-900" />
+                  </div>
+                  <h2 className="text-2xl font-techno font-bold text-navy-800">
+                    Objectives
+                  </h2>
+                </div>
                 <div className="space-y-3">
                   {quest.objectives.map((objective: any, index: number) => {
                     const isString = typeof objective === 'string'
@@ -358,40 +282,40 @@ const QuestDetail = () => {
                     return (
                       <div 
                         key={index}
-                        className={`p-4 rounded-lg border ${
+                        className={`p-4 rounded-xl border-2 transition-all ${
                           objCompleted 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-primary-50 border-primary-200'
+                            ? 'bg-gradient-to-r from-[#40EDCD]/10 to-[#40EDCD]/20 border-[#40EDCD]/40' 
+                            : 'bg-gradient-to-r from-[#FAD10B]/10 to-[#FAD10B]/20 border-[#FAD10B]/30 hover:border-[#FAD10B]/50'
                         }`}
                       >
                         <div className="flex items-start gap-3">
                           {objCompleted ? (
-                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                            <CheckCircle className="w-6 h-6 text-[#40EDCD] flex-shrink-0 mt-0.5" />
                           ) : (
-                            <div className="w-5 h-5 rounded-full border-2 border-accent-500 flex-shrink-0 mt-0.5"></div>
+                            <div className="w-6 h-6 rounded-full border-3 border-[#FAD10B] flex-shrink-0 mt-0.5 bg-white"></div>
                           )}
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-navy-800 font-medium ${objCompleted ? 'line-through opacity-60' : ''}`}>
+                              <span className={`text-navy-800 font-semibold text-base ${objCompleted ? 'line-through opacity-60' : ''}`}>
                                 {objName}
                               </span>
                               {objType && (
-                                <span className="px-2 py-0.5 bg-primary-200 text-primary-700 rounded text-xs font-medium">
+                                <span className="px-2 py-1 bg-[#FAD10B]/30 text-navy-800 rounded-md text-xs font-bold uppercase border border-[#FAD10B]/40">
                                   {objType}
                                 </span>
                               )}
                             </div>
                             {hasProgress && (
-                              <div className="mt-2">
-                                <div className="flex items-center justify-between mb-1 text-xs text-navy-600">
-                                  <span>Progress</span>
-                                  <span className="font-semibold">
+                              <div className="mt-3">
+                                <div className="flex items-center justify-between mb-2 text-sm text-navy-700">
+                                  <span className="font-medium">Progress</span>
+                                  <span className="font-bold">
                                     {objCurrent} / {objTarget}
                                   </span>
                                 </div>
-                                <div className="w-full bg-primary-200 rounded-full h-1.5">
+                                <div className="w-full bg-[#FAD10B]/20 rounded-full h-2 overflow-hidden">
                                   <div 
-                                    className="bg-indigo-600 h-1.5 rounded-full transition-all"
+                                    className="bg-gradient-to-r from-[#FAD10B] to-[#E0BC0A] h-2 rounded-full transition-all duration-500"
                                     style={{ width: `${Math.min(100, (objCurrent / objTarget) * 100)}%` }}
                                   ></div>
                                 </div>
@@ -408,12 +332,16 @@ const QuestDetail = () => {
             
             {/* Rewards */}
             {quest.rewards && quest.rewards.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
-                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
-                  <Award className="w-5 h-5" />
-                  Rewards
-                </h2>
-                <div className="space-y-3">
+              <div className="bg-white rounded-xl shadow-lg border-2 border-navy-800 p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-3 bg-gradient-to-br from-[#40EDCD] to-[#2BC9B0] rounded-lg">
+                    <Award className="w-6 h-6 text-navy-900" />
+                  </div>
+                  <h2 className="text-2xl font-techno font-bold text-navy-800">
+                    Rewards
+                  </h2>
+                </div>
+                <div className="grid gap-4">
                   {quest.rewards.map((reward: any, index: number) => {
                     const isString = typeof reward === 'string'
                     // Try multiple field names for reward name - ensure it's always a string
@@ -441,9 +369,15 @@ const QuestDetail = () => {
                         rewardName = String(rewardName) || 'Reward'
                       }
                     }
-                    const rewardQuantity = !isString ? (reward.quantity || reward.count || reward.amount || 1) : null
+                    // Parse quantity (API returns string)
+                    const rewardQuantity = !isString ? (
+                      typeof reward.quantity === 'string' 
+                        ? parseInt(reward.quantity, 10) 
+                        : (reward.quantity || reward.count || reward.amount || 1)
+                    ) : 1
                     const rewardValue = !isString ? (reward.value || reward.price || reward.coins || reward.raider_coins) : null
                     const rewardRarity = !isString ? (reward.rarity || reward.item?.rarity) : null
+                    const rewardType = !isString ? (reward.item?.item_type || reward.item_type) : null
                     const rewardImage = !isString ? (
                       reward.icon 
                       || reward.image 
@@ -456,7 +390,7 @@ const QuestDetail = () => {
                     ) : null
                     const rewardId = !isString ? (
                       reward.item_id 
-                      || reward.item 
+                      || (typeof reward.item === 'string' ? reward.item : null)
                       || reward.id
                       || reward.item?.id
                       || reward.item?.item_id
@@ -465,46 +399,59 @@ const QuestDetail = () => {
                     return (
                       <div 
                         key={index}
-                        className="flex items-center gap-4 p-4 bg-accent-50 rounded-lg border border-accent-200 hover:bg-accent-100 transition-colors"
+                        className="relative overflow-hidden rounded-xl bg-gradient-to-r from-accent-500/10 to-accent-500/20 border-2 border-accent-500/30 hover:border-accent-500/50 transition-all group"
                       >
-                        {rewardImage && (
-                          <img 
-                            src={rewardImage} 
-                            alt={rewardName}
-                            className="w-12 h-12 object-contain flex-shrink-0 bg-white rounded p-1"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        )}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {rewardId ? (
-                              <Link 
-                                to={`/items/${rewardId}`}
-                                className="text-accent-700 font-semibold hover:text-accent-800 transition-colors"
-                              >
-                                {rewardName}
-                              </Link>
-                            ) : (
-                              <span className="text-accent-700 font-semibold">{rewardName}</span>
-                            )}
-                            {rewardRarity && (
-                              <span className={`px-2 py-0.5 text-xs font-bold rounded ${getDifficultyColor(rewardRarity)}`}>
-                                {rewardRarity}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-navy-600">
-                            {rewardQuantity && rewardQuantity > 1 && (
-                              <span className="font-semibold">Quantity: ×{rewardQuantity}</span>
-                            )}
-                            {rewardValue && (
-                              <>
-                                <Package className="w-4 h-4" />
-                                <span className="font-semibold">{rewardValue.toLocaleString()}</span>
-                              </>
-                            )}
+                        <div className="flex items-center gap-4 p-4">
+                          {rewardImage && (
+                            <div className="relative flex-shrink-0">
+                              <div className="w-20 h-20 bg-white rounded-xl shadow-md p-2 group-hover:scale-110 transition-transform border-2 border-accent-500/20">
+                                <img 
+                                  src={rewardImage} 
+                                  alt={rewardName}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none'
+                                  }}
+                                />
+                              </div>
+                              {rewardQuantity > 1 && (
+                                <div className="absolute -top-2 -right-2 bg-gradient-to-br from-accent-500 to-accent-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shadow-lg border-2 border-white">
+                                  ×{rewardQuantity}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              {rewardId ? (
+                                <Link 
+                                  to={`/items/${rewardId}`}
+                                  className="text-lg font-bold text-accent-500 hover:text-accent-600 transition-colors truncate"
+                                >
+                                  {rewardName}
+                                </Link>
+                              ) : (
+                                <span className="text-lg font-bold text-accent-500 truncate">{rewardName}</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {rewardRarity && (
+                                <span className={`px-3 py-1 text-xs font-bold rounded-lg ${getDifficultyColor(rewardRarity)}`}>
+                                  {rewardRarity}
+                                </span>
+                              )}
+                              {rewardType && (
+                                <span className="px-3 py-1 bg-accent-500/20 text-navy-800 rounded-lg text-xs font-semibold border border-accent-500/30">
+                                  {rewardType}
+                                </span>
+                              )}
+                              {rewardValue && (
+                                <span className="px-3 py-1 bg-[#FAD10B]/20 text-navy-800 rounded-lg text-xs font-bold flex items-center gap-1 border border-[#FAD10B]/30">
+                                  <Package className="w-3 h-3" />
+                                  {rewardValue.toLocaleString()}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -514,13 +461,17 @@ const QuestDetail = () => {
               </div>
             )}
             
-            {/* Prerequisites */}
+            {/* Prerequisites - Accent Red Theme */}
             {quest.prerequisites && quest.prerequisites.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
-                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
-                  <Lock className="w-5 h-5" />
-                  Prerequisites
-                </h2>
+              <div className="bg-white rounded-xl shadow-lg border-2 border-[#FF003C]/40 p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-3 bg-gradient-to-br from-[#FF003C] to-[#CC0030] rounded-lg">
+                    <Lock className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-techno font-bold text-navy-800">
+                    Prerequisites
+                  </h2>
+                </div>
                 <p className="text-navy-600 mb-3">
                   The following quests must be completed before this quest becomes available:
                 </p>

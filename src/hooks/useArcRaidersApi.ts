@@ -182,6 +182,11 @@ export interface ArcRaidersQuest {
   imageUrl?: string
   thumbnail?: string
   
+  // XP - TOP LEVEL FIELD from API
+  xp?: number
+  experience?: number
+  exp?: number
+  
   // Objectives - can be strings or detailed objects
   objectives?: Array<string | {
     id?: string
@@ -194,20 +199,37 @@ export interface ArcRaidersQuest {
     [key: string]: any
   }>
   
-  // Rewards - can be strings or detailed objects
+  // Rewards - API returns array of objects with nested item
   rewards?: Array<string | {
     id?: string
     name?: string
     type?: string
     item_id?: string
-    item?: string
-    quantity?: number
+    item?: string | {
+      id?: string
+      name?: string
+      icon?: string
+      image?: string
+      rarity?: string
+      item_type?: string
+      value?: number
+      [key: string]: any
+    }
+    quantity?: number | string
     value?: number
     rarity?: string
     icon?: string
     image?: string
     [key: string]: any
   }>
+  
+  // Additional API fields
+  granted_items?: any[]
+  locations?: string[]
+  marker_category?: string
+  required_items?: any[]
+  created_at?: string
+  updated_at?: string
   
   // Quest stats
   duration?: number
