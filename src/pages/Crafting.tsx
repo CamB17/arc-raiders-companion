@@ -2,7 +2,28 @@ import { useRecipes } from '../hooks/useArcRaidersApi'
 import { Wrench, Package, ArrowRight } from 'lucide-react'
 
 const Crafting = () => {
-  const { data: recipes, isLoading, error } = useRecipes()
+  const { data: recipesResponse, isLoading, error } = useRecipes()
+  
+  // Handle both array and paginated responses
+  const recipes = Array.isArray(recipesResponse) 
+    ? recipesResponse 
+    : recipesResponse?.data || []
+  const pagination = !Array.isArray(recipesResponse) ? recipesResponse?.pagination : null
+  
+  // Debug logging to see what data we're getting - ONLY FIRST RECIPE
+  if (recipes.length > 0 && process.env.NODE_ENV === 'development') {
+    const firstRecipe = recipes[0]
+    if (firstRecipe) {
+      console.log('🔍 FIRST RECIPE:', firstRecipe.name)
+      console.log('🔍 Has components?', !!firstRecipe.components, 'Count:', firstRecipe.components?.length || 0)
+      console.log('🔍 Has requires?', !!firstRecipe.requires, 'Count:', firstRecipe.requires?.length || 0)
+      
+      const firstComponent = firstRecipe.components?.[0]
+      if (firstComponent) {
+        console.log('🔍 First component in recipe:', firstComponent)
+      }
+    }
+  }
   
   if (error) {
     return (
@@ -26,6 +47,11 @@ const Crafting = () => {
           <p className="text-navy-600">
             Discover all crafting recipes and required materials
           </p>
+          {pagination && (
+            <p className="text-sm text-navy-500 mt-2">
+              Showing {recipes.length} of {pagination.total} recipes
+            </p>
+          )}
         </div>
         
         {/* Recipes Grid */}
@@ -50,7 +76,7 @@ const Crafting = () => {
                   <div className="p-2 bg-accent-100 rounded-lg flex-shrink-0">
                     <Wrench className="w-5 h-5 text-accent-600" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-xl font-techno font-bold text-navy-800">
                       {recipe.name}
                     </h3>
@@ -59,6 +85,25 @@ const Crafting = () => {
                         {recipe.description}
                       </p>
                     )}
+                    <div className="flex items-center gap-3 mt-2">
+                      {recipe.workbench && (
+                        <p className="text-xs text-navy-500">
+                          Workbench: {recipe.workbench}
+                        </p>
+                      )}
+                      {recipe.rarity && (
+                        <span className={`inline-block px-2 py-1 text-xs font-bold rounded ${
+                          recipe.rarity.toLowerCase() === 'common' ? 'bg-gray-500 text-white' :
+                          recipe.rarity.toLowerCase() === 'uncommon' ? 'bg-green-600 text-white' :
+                          recipe.rarity.toLowerCase() === 'rare' ? 'bg-blue-600 text-white' :
+                          recipe.rarity.toLowerCase() === 'epic' ? 'bg-purple-600 text-white' :
+                          recipe.rarity.toLowerCase() === 'legendary' ? 'bg-orange-600 text-white' :
+                          'bg-navy-600 text-white'
+                        }`}>
+                          {recipe.rarity}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -70,18 +115,96 @@ const Crafting = () => {
                       Materials Required
                     </h4>
                     <div className="space-y-2">
-                      {recipe.requires?.map((req: any, index: number) => (
-                        <div 
-                          key={index}
-                          className="flex items-center justify-between bg-white rounded-lg px-4 py-2"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Package className="w-4 h-4 text-navy-500" />
-                            <span className="text-navy-700 font-medium">{req.item}</span>
+                      {/* Prefer components array (has full details) over requires array */}
+                      {(recipe.components || recipe.requires || [])?.map((req: any, index: number) => {
+                        // Extract item name with better priority order
+                        // Check nested objects FIRST since they have the full data
+                        let itemName = 
+                          // Check if item/item_id/id are objects with a name property
+                          (typeof req.item === 'object' && req.item?.name) ||
+                          (typeof req.item_id === 'object' && req.item_id?.name) ||
+                          (typeof req.id === 'object' && req.id?.name) ||
+                          // Then check direct name fields (but skip if "Unknown Material")
+                          (req.name && req.name !== 'Unknown Material' ? req.name : null) ||
+                          (req.item_name && req.item_name !== 'Unknown Material' ? req.item_name : null) ||
+                          // Check if item is a string
+                          (typeof req.item === 'string' && req.item !== 'Unknown Material' ? req.item : null) ||
+                          // More fallbacks
+                          req.display_name ||
+                          req.label ||
+                          req.title ||
+                          // Extract ID as last resort
+                          (typeof req.item === 'object' ? req.item?.id : null) ||
+                          (typeof req.item_id === 'object' ? req.item_id?.id : null) ||
+                          (typeof req.id === 'object' ? req.id?.id : null) ||
+                          'Unknown Material'
+                        
+                        // Debug log ONLY for first material of first recipe
+                        if (itemName === 'Unknown Material' && process.env.NODE_ENV === 'development') {
+                          if (recipe === recipes[0] && index === 0) {
+                            console.warn('⚠ First material shows Unknown. Component object:', req)
+                          }
+                        }
+                        
+                        // Get count/quantity
+                        const itemCount = req.count || req.quantity || 1
+                        
+                        // Get image from multiple possible fields, including nested objects
+                        const itemImage = req.image ||
+                                        req.imageUrl ||
+                                        req.image_url ||
+                                        req.icon ||
+                                        req.thumbnail ||
+                                        (typeof req.item === 'object' ? (req.item?.image || req.item?.imageUrl || req.item?.icon) : null) ||
+                                        (typeof req.item_id === 'object' ? (req.item_id?.image || req.item_id?.imageUrl || req.item_id?.icon) : null) ||
+                                        (typeof req.id === 'object' ? (req.id?.image || req.id?.imageUrl || req.id?.icon) : null)
+                        
+                        // Get item ID for linking, extract from objects if needed
+                        const itemId = (typeof req.id === 'object' ? req.id?.id : req.id) ||
+                                     (typeof req.item_id === 'object' ? req.item_id?.id : req.item_id) ||
+                                     (typeof req.item === 'string' ? req.item : null) ||
+                                     (typeof req.item === 'object' ? req.item?.id : null) ||
+                                     null
+                        
+                        return (
+                          <div 
+                            key={index}
+                            className="flex items-center justify-between bg-white rounded-lg px-4 py-2"
+                          >
+                            <div className="flex items-center gap-2">
+                              {itemImage ? (
+                                <img 
+                                  src={itemImage} 
+                                  alt={itemName}
+                                  className="w-6 h-6 object-contain flex-shrink-0"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none'
+                                  }}
+                                />
+                              ) : (
+                                <Package className="w-4 h-4 text-navy-500 flex-shrink-0" />
+                              )}
+                              <span className="text-navy-700 font-medium">
+                                {itemId ? (
+                                  <a 
+                                    href={`/items/${itemId}`}
+                                    className="hover:text-accent-600 transition-colors"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      window.location.href = `/items/${itemId}`
+                                    }}
+                                  >
+                                    {itemName}
+                                  </a>
+                                ) : (
+                                  itemName
+                                )}
+                              </span>
+                            </div>
+                            <span className="text-accent-600 font-bold">× {itemCount}</span>
                           </div>
-                          <span className="text-accent-600 font-bold">× {req.count}</span>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                   
