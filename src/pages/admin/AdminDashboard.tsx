@@ -11,6 +11,7 @@ import {
   BarChart3,
   Calendar 
 } from 'lucide-react'
+import { useMaps } from '@/hooks/useSupabase'
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/Card'
 import Button from '@/components/Button'
 import SupabaseDiagnostic from '@/components/admin/SupabaseDiagnostic'
@@ -36,6 +37,7 @@ const AdminDashboard = () => {
   const { data: customGuides } = useCustomGuides()
   const { data: customBuilds } = useCustomBuilds()
   const { data: events } = useAllEvents()
+  const { data: maps } = useMaps()
 
   const adminSections = [
     {
@@ -100,6 +102,15 @@ const AdminDashboard = () => {
       count: events?.length || 0,
       color: 'text-pink-600',
       bgColor: 'bg-pink-50',
+    },
+    {
+      title: 'Maps',
+      description: 'Manage game zone maps and markers',
+      icon: MapPin,
+      path: '/admin/maps',
+      count: maps?.length || 0,
+      color: 'text-teal-600',
+      bgColor: 'bg-teal-50',
     },
   ]
 

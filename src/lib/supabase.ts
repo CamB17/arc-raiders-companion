@@ -48,6 +48,21 @@ export interface Database {
         Insert: Omit<CustomBuild, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<CustomBuild, 'id' | 'created_at' | 'updated_at'>>
       }
+      maps: {
+        Row: Map
+        Insert: Omit<Map, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Map, 'id' | 'created_at' | 'updated_at'>>
+      }
+      map_zones: {
+        Row: MapZone
+        Insert: Omit<MapZone, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<MapZone, 'id' | 'created_at' | 'updated_at'>>
+      }
+      map_markers: {
+        Row: MapMarker
+        Insert: Omit<MapMarker, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<MapMarker, 'id' | 'created_at' | 'updated_at'>>
+      }
     }
   }
 }
@@ -167,6 +182,62 @@ export interface CustomBuild {
   rating?: number // 1-5
   votes?: number
   tags?: string[]
+  created_at?: string
+  updated_at?: string
+}
+
+// Map - for game zone/map information
+export interface Map {
+  id: string
+  map_id: string // Identifier like 'dam', 'spaceport', etc.
+  name: string
+  description?: string
+  image_url: string
+  thumbnail_url?: string
+  map_width: number
+  map_height: number
+  possible_events?: string[]
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+// Map Zone - for named regions/areas on maps
+export interface MapZone {
+  id: string
+  map_id: string
+  name: string
+  description?: string
+  center_x: number
+  center_y: number
+  width?: number
+  height?: number
+  polygon_coords?: Array<{ x: number; y: number }>
+  color?: string
+  font_size?: number
+  is_visible?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+// Map Marker - for interactive markers on maps
+export interface MapMarker {
+  id: string
+  map_id: string
+  marker_type: 'container' | 'arc' | 'location' | 'resource' | 'other'
+  category: string // Specific category like 'weapon_case', 'tick', 'extraction_point'
+  name: string
+  description?: string
+  x: number // X coordinate as percentage (0-100)
+  y: number // Y coordinate as percentage (0-100)
+  icon_type: string // Icon identifier
+  icon_color: string // Color like 'orange', 'green', 'white', 'red'
+  icon_shape?: string // Shape like 'circle', 'square', 'triangle'
+  icon_symbol?: string // Symbol inside icon like 'arrow', 'question', 'skull', 'leaf'
+  tooltip?: string
+  zone_id?: string
+  is_visible?: boolean
+  metadata?: Record<string, any>
   created_at?: string
   updated_at?: string
 }
