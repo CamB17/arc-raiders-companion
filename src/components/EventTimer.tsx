@@ -32,8 +32,12 @@ const EventTimer = () => {
     return null
   }
   
-  const formatCountdown = (countdown: EventWithCountdown['countdown']) => {
+  const formatCountdown = (countdown: EventWithCountdown['countdown'], compact = false) => {
     const { hours, minutes, seconds } = countdown
+    if (compact) {
+      // For mobile: use format like "3h 33m 56s" all on one line with monospace
+      return `${hours}h ${minutes}m ${seconds.toString().padStart(2, '0')}s`
+    }
     return `${hours}h ${minutes}m ${seconds}s`
   }
   
@@ -44,7 +48,7 @@ const EventTimer = () => {
       {/* Main Timer Display */}
       <motion.button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg transition-all w-full sm:w-auto ${
           nextEvent.status === 'active'
             ? 'bg-green-500 hover:bg-green-600 text-white'
             : 'bg-accent-500 hover:bg-accent-600 text-white'
@@ -52,33 +56,33 @@ const EventTimer = () => {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
-        <Clock className="w-4 h-4" />
-        <div className="flex flex-col items-start text-left">
-          <span className="text-xs font-medium opacity-90">
+        <Clock className="w-4 h-4 flex-shrink-0" />
+        <div className="flex flex-col items-start text-left min-w-0 flex-1">
+          <span className="text-xs font-medium opacity-90 whitespace-nowrap">
             {nextEvent.status === 'active' ? 'Active Now' : 'Next Event'}
           </span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold">
+          <div className="flex items-center gap-2 min-w-0 w-full">
+            <span className="text-sm font-bold truncate">
               {nextEvent.event_name}
             </span>
-            <span className="text-xs opacity-75">·</span>
-            <span className="text-xs font-medium">
+            <span className="text-xs opacity-75 flex-shrink-0">·</span>
+            <span className="text-xs font-medium truncate">
               {nextEvent.location}
             </span>
           </div>
         </div>
-        <div className="ml-2 flex flex-col items-end">
-          <span className="text-xs font-medium opacity-90">
+        <div className="ml-2 flex flex-col items-end flex-shrink-0">
+          <span className="text-xs font-medium opacity-90 whitespace-nowrap">
             {nextEvent.status === 'active' ? 'Ends in' : 'Starts in'}
           </span>
-          <span className="text-sm font-mono font-bold tabular-nums">
-            {formatCountdown(nextEvent.countdown)}
+          <span className="text-sm font-mono font-bold tabular-nums whitespace-nowrap">
+            {formatCountdown(nextEvent.countdown, true)}
           </span>
         </div>
         {isExpanded ? (
-          <ChevronUp className="w-4 h-4 ml-1" />
+          <ChevronUp className="w-4 h-4 ml-1 flex-shrink-0" />
         ) : (
-          <ChevronDown className="w-4 h-4 ml-1" />
+          <ChevronDown className="w-4 h-4 ml-1 flex-shrink-0" />
         )}
       </motion.button>
       
@@ -90,9 +94,9 @@ const EventTimer = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="absolute top-full right-0 mt-2 w-96 max-h-[80vh] overflow-auto bg-white rounded-lg shadow-2xl border border-primary-200 z-50"
+            className="absolute top-full right-0 sm:right-0 left-0 sm:left-auto mt-2 w-full sm:w-96 max-w-full sm:max-w-md max-h-[80vh] overflow-auto bg-white rounded-lg shadow-2xl border border-primary-200 z-50"
           >
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
               <div className="mb-4 pb-3 border-b border-primary-200">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-techno font-bold text-navy-800">
@@ -134,12 +138,12 @@ const EventTimer = () => {
                             : 'bg-white border-primary-200'
                         }`}
                       >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-start justify-between mb-2 gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
                             <MapPin className="w-4 h-4 text-accent-500 flex-shrink-0" />
-                            <span className="font-bold text-navy-800">{location}</span>
+                            <span className="font-bold text-navy-800 break-words">{location}</span>
                           </div>
-                          <span className="text-xs text-navy-600 bg-primary-100 px-2 py-1 rounded">
+                          <span className="text-xs text-navy-600 bg-primary-100 px-2 py-1 rounded flex-shrink-0 whitespace-nowrap">
                             {locationEvents.length} event{locationEvents.length > 1 ? 's' : ''}
                           </span>
                         </div>
@@ -154,28 +158,28 @@ const EventTimer = () => {
                                   : 'bg-primary-50'
                               }`}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-sm text-navy-800">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold text-sm text-navy-800 break-words">
                                       {event.event_name}
                                     </span>
                                     {event.status === 'active' && (
-                                      <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-bold">
+                                      <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-bold flex-shrink-0">
                                         LIVE
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-xs text-navy-600 mt-1">
+                                  <div className="text-xs text-navy-600 mt-1 break-words">
                                     {convertUTCToLocal(event.start_time)} - {convertUTCToLocal(event.end_time)}
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div className="text-xs text-navy-600">
+                                <div className="text-left sm:text-right flex-shrink-0">
+                                  <div className="text-xs text-navy-600 whitespace-nowrap">
                                     {event.status === 'active' ? 'Ends in:' : 'Starts in:'}
                                   </div>
-                                  <div className="text-sm font-mono font-bold text-navy-800 tabular-nums">
-                                    {formatCountdown(event.countdown)}
+                                  <div className="text-sm font-mono font-bold text-navy-800 tabular-nums whitespace-nowrap">
+                                    {formatCountdown(event.countdown, true)}
                                   </div>
                                 </div>
                               </div>
