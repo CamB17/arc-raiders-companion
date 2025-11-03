@@ -7,6 +7,9 @@ import type {
   CustomLocation,
   CustomGuide,
   CustomBuild,
+  Map,
+  MapZone,
+  MapMarker,
 } from '@/lib/supabase'
 
 // Generic CRUD hooks for any table
@@ -264,4 +267,148 @@ export const useCustomBuild = (id?: string) => useSupabaseRecord<CustomBuild>('c
 export const useCreateCustomBuild = () => useSupabaseCreate<CustomBuild>('custom_builds')
 export const useUpdateCustomBuild = () => useSupabaseUpdate<CustomBuild>('custom_builds')
 export const useDeleteCustomBuild = () => useSupabaseDelete('custom_builds')
+
+// Maps
+export const useMaps = () => useSupabaseTable<Map>('maps')
+export const useMap = (id?: string) => useSupabaseRecord<Map>('maps', id)
+export const useCreateMap = () => useSupabaseCreate<Map>('maps')
+export const useUpdateMap = () => useSupabaseUpdate<Map>('maps')
+export const useDeleteMap = () => useSupabaseDelete('maps')
+
+// Helper to get map by map_id
+export const useMapByMapId = (mapId?: string) => {
+  return useQuery<Map | null>({
+    queryKey: ['supabase', 'maps', 'by_map_id', mapId],
+    queryFn: async () => {
+      if (!isSupabaseConfigured() || !mapId) {
+        return null
+      }
+
+      const { data, error } = await supabase
+        .from('maps')
+        .select('*')
+        .eq('map_id', mapId)
+        .eq('is_active', true)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null
+        }
+        console.error(`Error fetching map for ${mapId}:`, error)
+        return null
+      }
+
+      return data
+    },
+    enabled: !!mapId && isSupabaseConfigured(),
+  })
+}
+
+// Get map with all zones and markers
+export const useMapWithDetails = (mapId?: string) => {
+  return useQuery<Map & { map_zones: MapZone[]; map_markers: MapMarker[] } | null>({
+    queryKey: ['supabase', 'maps', 'with_details', mapId],
+    queryFn: async () => {
+      if (!isSupabaseConfigured() || !mapId) {
+        return null
+      }
+
+      const { data, error } = await supabase
+        .from('maps')
+        .select(`
+          *,
+          map_zones (*),
+          map_markers (*)
+        `)
+        .eq('map_id', mapId)
+        .eq('is_active', true)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null
+        }
+        console.error(`Error fetching map details for ${mapId}:`, error)
+        return null
+      }
+
+      return data as Map & { map_zones: MapZone[]; map_markers: MapMarker[] }
+    },
+    enabled: !!mapId && isSupabaseConfigured(),
+  })
+}
+
+// Map Zones
+export const useMapZones = (mapId?: string) => {
+  return useQuery<MapZone[]>({
+    queryKey: ['supabase', 'map_zones', mapId],
+    queryFn: async () => {
+      if (!isSupabaseConfigured() || !mapId) {
+        return []
+      }
+
+      const { data, error } = await supabase
+        .from('map_zones')
+        .select('*')
+        .eq('map_id', mapId)
+        .eq('is_visible', true)
+        .order('name')
+
+      if (error) {
+        console.error(`Error fetching map zones for ${mapId}:`, error)
+        return []
+      }
+
+      return data || []
+    },
+    enabled: !!mapId && isSupabaseConfigured(),
+  })
+}
+
+export const useMapZone = (id?: string) => useSupabaseRecord<MapZone>('map_zones', id)
+export const useCreateMapZone = () => useSupabaseCreate<MapZone>('map_zones')
+export const useUpdateMapZone = () => useSupabaseUpdate<MapZone>('map_zones')
+export const useDeleteMapZone = () => useSupabaseDelete('map_zones')
+
+// Map Markers
+export const useMapMarkers = (mapId?: string, markerType?: string, category?: string) => {
+  return useQuery<MapMarker[]>({
+    queryKey: ['supabase', 'map_markers', mapId, markerType, category],
+    queryFn: async () => {
+      if (!isSupabaseConfigured() || !mapId) {
+        return []
+      }
+
+      let query = supabase
+        .from('map_markers')
+        .select('*')
+        .eq('map_id', mapId)
+        .eq('is_visible', true)
+
+      if (markerType) {
+        query = query.eq('marker_type', markerType)
+      }
+
+      if (category) {
+        query = query.eq('category', category)
+      }
+
+      const { data, error } = await query.order('category', { ascending: true })
+
+      if (error) {
+        console.error(`Error fetching map markers for ${mapId}:`, error)
+        return []
+      }
+
+      return data || []
+    },
+    enabled: !!mapId && isSupabaseConfigured(),
+  })
+}
+
+export const useMapMarker = (id?: string) => useSupabaseRecord<MapMarker>('map_markers', id)
+export const useCreateMapMarker = () => useSupabaseCreate<MapMarker>('map_markers')
+export const useUpdateMapMarker = () => useSupabaseUpdate<MapMarker>('map_markers')
+export const useDeleteMapMarker = () => useSupabaseDelete('map_markers')
 

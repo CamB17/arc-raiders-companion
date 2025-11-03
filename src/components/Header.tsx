@@ -16,6 +16,7 @@ const Header = () => {
     { name: 'Quests', path: '/quests' },
     { name: 'Traders', path: '/traders' },
     { name: 'Crafting', path: '/crafting' },
+    { name: 'Maps', path: '/maps' },
     { name: 'Admin', path: '/admin' },
   ]
   
