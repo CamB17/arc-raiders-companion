@@ -15,6 +15,7 @@ import TraderDetail from './pages/TraderDetail'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import CustomItemsAdmin from './pages/admin/CustomItemsAdmin'
 import CustomItemForm from './pages/admin/CustomItemForm'
+import EventsAdmin from './pages/admin/EventsAdmin'
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/items" element={<CustomItemsAdmin />} />
         <Route path="/admin/items/:id" element={<CustomItemForm />} />
+        <Route path="/admin/events" element={<EventsAdmin />} />
       </Routes>
     </Layout>
   )
