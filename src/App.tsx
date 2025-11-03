@@ -11,6 +11,11 @@ import EnemyDetail from './pages/EnemyDetail'
 import Traders from './pages/Traders'
 import TraderDetail from './pages/TraderDetail'
 
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard'
+import CustomItemsAdmin from './pages/admin/CustomItemsAdmin'
+import CustomItemForm from './pages/admin/CustomItemForm'
+
 function App() {
   return (
     <Layout>
@@ -25,6 +30,11 @@ function App() {
         <Route path="/enemies/:id" element={<EnemyDetail />} />
         <Route path="/traders" element={<Traders />} />
         <Route path="/traders/:id" element={<TraderDetail />} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/items" element={<CustomItemsAdmin />} />
+        <Route path="/admin/items/:id" element={<CustomItemForm />} />
       </Routes>
     </Layout>
   )
