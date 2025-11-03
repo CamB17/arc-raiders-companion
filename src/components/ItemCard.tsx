@@ -125,98 +125,185 @@ const ItemCard = ({ item }: ItemCardProps) => {
               return false
             }
             
-            return (
-              <>
-                {hasValue(stackSize) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-navy-600">Stack Size</span>
-                    <span className="text-navy-800 font-semibold">{typeof stackSize === 'number' ? stackSize : parseFloat(stackSize) || stackSize}</span>
+            // Helper to get numeric value
+            const getNumericValue = (val: any): number => {
+              if (typeof val === 'number') return val
+              if (typeof val === 'string') {
+                const parsed = parseFloat(val)
+                return isNaN(parsed) ? 0 : parsed
+              }
+              return 0
+            }
+            
+            // Check if item is a weapon
+            const isWeapon = itemType?.toLowerCase().includes('weapon') || item.category?.toLowerCase() === 'weapon'
+            
+            // Get weapon-specific stats
+            const damage = stats.damage
+            const fireRate = stats.fireRate
+            const range = stats.range
+            const magazineSize = stats.magazineSize || stats.magazine_size
+            const stability = stats.stability
+            const agility = stats.agility
+            const stealth = stats.stealth
+            
+            // Define max values for percentage calculation (matching ItemDetail)
+            const maxValues: Record<string, number> = {
+              damage: 100,
+              fireRate: 1000,
+              range: 100,
+              stability: 100,
+              agility: 100,
+              stealth: 100,
+              magazineSize: 100,
+            }
+            
+            // Stat bar component for weapons
+            const StatBar = ({ label, value, maxValue, suffix = '', showValue = true }: {
+              label: string
+              value: number
+              maxValue: number
+              suffix?: string
+              showValue?: boolean
+            }) => {
+              const percentage = Math.min((value / maxValue) * 100, 100)
+              
+              return (
+                <div className="mb-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs font-medium text-navy-600">{label}</span>
+                    {showValue && (
+                      <span className="text-xs font-bold text-navy-800">
+                        {value}{suffix}
+                      </span>
+                    )}
                   </div>
-                )}
-                
-                {hasValue(stats.healingPerSecond) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-navy-600">Healing/Second</span>
-                    <span className="text-navy-800 font-semibold">
-                      {typeof stats.healingPerSecond === 'number' 
-                        ? stats.healingPerSecond 
-                        : parseFloat(stats.healingPerSecond) || stats.healingPerSecond}
-                      hp/s
-                    </span>
+                  <div className="w-full h-1.5 bg-primary-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-accent-500 to-accent-600 rounded-full transition-all duration-300"
+                      style={{ width: `${percentage}%` }}
+                    />
                   </div>
-                )}
-                
-                {hasValue(stats.staminaPerSecond) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-navy-600">Stamina/Second</span>
-                    <span className="text-navy-800 font-semibold">
-                      {typeof stats.staminaPerSecond === 'number' 
-                        ? stats.staminaPerSecond 
-                        : parseFloat(stats.staminaPerSecond) || stats.staminaPerSecond}
-                    </span>
-                  </div>
-                )}
-                
-                {hasValue(stats.useTime) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-navy-600">Use Time</span>
-                    <span className="text-navy-800 font-semibold">
-                      {typeof stats.useTime === 'number' 
-                        ? stats.useTime 
-                        : parseFloat(stats.useTime) || stats.useTime}
-                      s
-                    </span>
-                  </div>
-                )}
-                
-                {hasValue(stats.duration) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-navy-600">Duration</span>
-                    <span className="text-navy-800 font-semibold">
-                      {typeof stats.duration === 'number' 
-                        ? stats.duration 
-                        : parseFloat(stats.duration) || stats.duration}
-                      s
-                    </span>
-                  </div>
-                )}
-                
-                {hasValue(stats.damage) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-navy-600">Damage</span>
-                    <span className="text-navy-800 font-semibold">
-                      {typeof stats.damage === 'number' 
-                        ? stats.damage 
-                        : parseFloat(stats.damage) || stats.damage}
-                    </span>
-                  </div>
-                )}
-                
-                {hasValue(stats.fireRate) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-navy-600">Fire Rate</span>
-                    <span className="text-navy-800 font-semibold">
-                      {typeof stats.fireRate === 'number' 
-                        ? stats.fireRate 
-                        : parseFloat(stats.fireRate) || stats.fireRate}
-                      {' '}RPM
-                    </span>
-                  </div>
-                )}
-                
-                {hasValue(stats.range) && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-navy-600">Range</span>
-                    <span className="text-navy-800 font-semibold">
-                      {typeof stats.range === 'number' 
-                        ? stats.range 
-                        : parseFloat(stats.range) || stats.range}
-                      m
-                    </span>
-                  </div>
-                )}
-              </>
-            )
+                </div>
+              )
+            }
+            
+            if (isWeapon) {
+              // Weapon stats with graph bars
+              return (
+                <div className="space-y-1">
+                  {hasValue(damage) && (
+                    <StatBar
+                      label="Damage"
+                      value={getNumericValue(damage)}
+                      maxValue={maxValues.damage}
+                    />
+                  )}
+                  {hasValue(fireRate) && (
+                    <StatBar
+                      label="Fire Rate"
+                      value={getNumericValue(fireRate)}
+                      maxValue={maxValues.fireRate}
+                      suffix=" RPM"
+                    />
+                  )}
+                  {hasValue(range) && (
+                    <StatBar
+                      label="Range"
+                      value={getNumericValue(range)}
+                      maxValue={maxValues.range}
+                    />
+                  )}
+                  {hasValue(magazineSize) && (
+                    <StatBar
+                      label="Magazine"
+                      value={getNumericValue(magazineSize)}
+                      maxValue={maxValues.magazineSize}
+                    />
+                  )}
+                  {hasValue(stability) && (
+                    <StatBar
+                      label="Stability"
+                      value={getNumericValue(stability)}
+                      maxValue={maxValues.stability}
+                    />
+                  )}
+                  {hasValue(agility) && (
+                    <StatBar
+                      label="Agility"
+                      value={getNumericValue(agility)}
+                      maxValue={maxValues.agility}
+                    />
+                  )}
+                  {hasValue(stealth) && (
+                    <StatBar
+                      label="Stealth"
+                      value={getNumericValue(stealth)}
+                      maxValue={maxValues.stealth}
+                    />
+                  )}
+                </div>
+              )
+            } else {
+              // Non-weapon stats (keep original format)
+              return (
+                <>
+                  {hasValue(stackSize) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-navy-600">Stack Size</span>
+                      <span className="text-navy-800 font-semibold">{typeof stackSize === 'number' ? stackSize : parseFloat(stackSize) || stackSize}</span>
+                    </div>
+                  )}
+                  
+                  {hasValue(stats.healingPerSecond) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-navy-600">Healing/Second</span>
+                      <span className="text-navy-800 font-semibold">
+                        {typeof stats.healingPerSecond === 'number' 
+                          ? stats.healingPerSecond 
+                          : parseFloat(stats.healingPerSecond) || stats.healingPerSecond}
+                        hp/s
+                      </span>
+                    </div>
+                  )}
+                  
+                  {hasValue(stats.staminaPerSecond) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-navy-600">Stamina/Second</span>
+                      <span className="text-navy-800 font-semibold">
+                        {typeof stats.staminaPerSecond === 'number' 
+                          ? stats.staminaPerSecond 
+                          : parseFloat(stats.staminaPerSecond) || stats.staminaPerSecond}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {hasValue(stats.useTime) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-navy-600">Use Time</span>
+                      <span className="text-navy-800 font-semibold">
+                        {typeof stats.useTime === 'number' 
+                          ? stats.useTime 
+                          : parseFloat(stats.useTime) || stats.useTime}
+                        s
+                      </span>
+                    </div>
+                  )}
+                  
+                  {hasValue(stats.duration) && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-navy-600">Duration</span>
+                      <span className="text-navy-800 font-semibold">
+                        {typeof stats.duration === 'number' 
+                          ? stats.duration 
+                          : parseFloat(stats.duration) || stats.duration}
+                        s
+                      </span>
+                    </div>
+                  )}
+                </>
+              )
+            }
           })()}
         </div>
         

@@ -154,8 +154,8 @@ const MapDetail = () => {
               Find the best loot spots, quest locations, POIs, ARC enemies and more
             </p>
           </CardHeader>
-          <CardContent className="p-0">
-            <ZoneMap map={mapData} height={1000} />
+          <CardContent className="p-0" style={{ minHeight: '70vh' }}>
+            <ZoneMap map={mapData} height="70vh" />
           </CardContent>
         </Card>
       </div>

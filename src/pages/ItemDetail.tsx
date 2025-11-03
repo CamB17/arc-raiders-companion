@@ -1,8 +1,8 @@
 import { useParams, Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { useItem, useArcs, findArcsThatDropItem } from '../hooks/useArcRaidersApi'
-import { ArrowLeft, Weight, Coins, Package, User, TrendingUp, Recycle, Target } from 'lucide-react'
+import { useItem, useArcs, useItems, findArcsThatDropItem } from '../hooks/useArcRaidersApi'
+import { ArrowLeft, Weight, Coins, Package, User, TrendingUp, Recycle, Target, Layers } from 'lucide-react'
 import ItemPreview from '../components/ItemPreview'
 
 const getRarityStyles = (rarity?: string): { backgroundColor: string; color: string } => {
@@ -32,18 +32,92 @@ const getItemTypeColor = (type?: string) => {
   return colors[type?.toLowerCase() || ''] || 'bg-navy-600 text-white'
 }
 
+// Extract base name from variant names (e.g., "Ferro I" -> "Ferro")
+const extractBaseName = (name: string): string => {
+  // Match Roman numerals (I, II, III, IV, V, etc.) or Arabic numerals at the end
+  const match = name.match(/\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/)
+  if (match) {
+    return name.replace(/\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/, '').trim()
+  }
+  return name
+}
+
+// Check if an item name has a variant number
+const hasVariantNumber = (name: string): boolean => {
+  return /\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/.test(name)
+}
+
 const ItemDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { data: item, isLoading, error } = useItem(id || '')
   const { data: arcsResponse } = useArcs()
+  const { data: itemsResponse } = useItems()
   const arcs = arcsResponse?.data || []
+  const allItems = itemsResponse?.data || []
   
   // State for hover preview
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null)
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 })
   
+  // State for crafting/recycle tabs - default to whichever has data
+  const [activeTab, setActiveTab] = useState<'craft' | 'recycle'>(() => {
+    // Default to craft if available, otherwise recycle
+    if (item && (item.components || item.crafting?.requires || item.requiredMaterials)?.length > 0) {
+      return 'craft'
+    }
+    return 'recycle'
+  })
+  
   // Find which arcs drop this item
   const arcsThatDrop = item && id ? findArcsThatDropItem(id, item, arcs) : []
+  
+  // Find upgraded versions (variants) by base name
+  const upgradedVersions = useMemo(() => {
+    if (!item || !item.name) return []
+    
+    const itemName = item.name
+    const baseName = hasVariantNumber(itemName) ? extractBaseName(itemName) : itemName
+    
+    // Find all items with the same base name (including current item if it's a variant)
+    const variants = allItems.filter((otherItem: any) => {
+      if (!otherItem.name) return false
+      
+      const otherBaseName = hasVariantNumber(otherItem.name) ? extractBaseName(otherItem.name) : otherItem.name
+      
+      // Match if they have the same base name
+      return otherBaseName.toLowerCase() === baseName.toLowerCase()
+    })
+    
+    // Only show if we found 2+ variants (including current item)
+    if (variants.length < 2) return []
+    
+    // Sort by variant number
+    return variants.sort((a: any, b: any) => {
+      const aMatch = (a.name || '').match(/\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/)
+      const bMatch = (b.name || '').match(/\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/)
+      
+      // If one has variant number and one doesn't, sort variant number first
+      if (aMatch && !bMatch) return -1
+      if (!aMatch && bMatch) return 1
+      if (!aMatch && !bMatch) return 0
+      
+      const getVariantOrder = (variant: string): number => {
+        if (variant === 'I') return 1
+        if (variant === 'II') return 2
+        if (variant === 'III') return 3
+        if (variant === 'IV') return 4
+        if (variant === 'V') return 5
+        if (variant === 'VI') return 6
+        if (variant === 'VII') return 7
+        if (variant === 'VIII') return 8
+        if (variant === 'IX') return 9
+        if (variant === 'X') return 10
+        return parseInt(variant) || 0
+      }
+      
+      return getVariantOrder(aMatch![1]) - getVariantOrder(bMatch![1])
+    })
+  }, [item, allItems])
   
   // Helper function to get item ID from breakdown item
   const getItemIdFromBreakdown = (breakdownItem: any): string | null => {
@@ -515,12 +589,110 @@ const ItemDetail = () => {
           
           {/* Right Column - Details */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Weapon Variants */}
+            {/* Upgraded Versions */}
+            {upgradedVersions.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
+                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
+                  <Layers className="w-5 h-5" />
+                  Upgraded Versions
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {upgradedVersions.map((variant: any) => {
+                    const variantId = variant.id
+                    const variantName = variant.name
+                    const variantImage = variant.icon || variant.image || variant.imageUrl || variant.thumbnail
+                    const variantRarity = variant.rarity
+                    const isCurrentItem = variantId === id
+                    
+                    const handleMouseEnter = (e: React.MouseEvent) => {
+                      if (variantId) {
+                        setHoveredItemId(variantId)
+                        setHoverPosition({ x: e.clientX, y: e.clientY })
+                      }
+                    }
+                    
+                    const handleMouseLeave = () => {
+                      setHoveredItemId(null)
+                    }
+                    
+                    const handleMouseMove = (e: React.MouseEvent) => {
+                      if (hoveredItemId === variantId) {
+                        setHoverPosition({ x: e.clientX, y: e.clientY })
+                      }
+                    }
+                    
+                    const variantCard = (
+                      <div
+                        className={`group flex flex-col items-center p-4 rounded-lg border transition-all ${
+                          isCurrentItem
+                            ? 'border-accent-400 bg-accent-50'
+                            : 'border-primary-200 hover:border-accent-400 hover:bg-primary-50'
+                        }`}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                        onMouseMove={handleMouseMove}
+                      >
+                        {variantImage ? (
+                          <img 
+                            src={variantImage} 
+                            alt={variantName}
+                            className="w-16 h-16 object-contain mb-2 opacity-80 group-hover:opacity-100 transition-opacity"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              e.currentTarget.parentElement?.querySelector('.variant-fallback')?.classList.remove('hidden')
+                            }}
+                          />
+                        ) : null}
+                        <div className={`variant-fallback w-16 h-16 bg-primary-100 rounded flex items-center justify-center mb-2 ${variantImage ? 'hidden' : ''}`}>
+                          <span className="text-2xl font-techno text-navy-600">
+                            {variantName?.charAt(0) || '?'}
+                          </span>
+                        </div>
+                        <span className={`text-sm font-medium text-center transition-colors ${
+                          isCurrentItem
+                            ? 'text-accent-700 font-bold'
+                            : 'text-navy-800 group-hover:text-accent-600'
+                        }`}>
+                          {variantName}
+                        </span>
+                        {variantRarity && (() => {
+                          const variantStyles = getRarityStyles(variantRarity)
+                          return (
+                            <span 
+                              className="mt-1 px-2 py-0.5 text-xs font-bold rounded"
+                              style={variantStyles}
+                            >
+                              {variantRarity}
+                            </span>
+                          )
+                        })()}
+                      </div>
+                    )
+                    
+                    if (isCurrentItem) {
+                      return <div key={variantId}>{variantCard}</div>
+                    }
+                    
+                    return (
+                      <Link
+                        key={variantId}
+                        to={`/items/${variantId}`}
+                      >
+                        {variantCard}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Legacy Weapon Variants (from API variants field) */}
             {(() => {
               const isWeapon = itemType?.toLowerCase().includes('weapon') || item.category?.toLowerCase() === 'weapon'
               const variants = item.variants || item.weapon_variants || item.variations || []
               
-              if (isWeapon && variants && variants.length > 0) {
+              // Only show if we don't have upgradedVersions (to avoid duplicates)
+              if (isWeapon && variants && variants.length > 0 && upgradedVersions.length === 0) {
                 return (
                   <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
                     <h2 className="text-xl font-techno font-bold text-navy-800 mb-4">
@@ -641,12 +813,47 @@ const ItemDetail = () => {
               return null
             })()}
             
-            {/* Needed to Craft */}
-            {neededToCraft.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
-                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4">
-                  Needed to Craft
-                </h2>
+            {/* Crafting & Economy - Combined Tabs */}
+            {(neededToCraft.length > 0 || recycleValue || raiderCoins) && (
+              <div className="bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden">
+                {/* Tab Headers */}
+                <div className="flex border-b border-primary-200">
+                  {neededToCraft.length > 0 && (
+                    <button
+                      onClick={() => setActiveTab('craft')}
+                      className={`flex-1 px-6 py-4 font-semibold transition-colors ${
+                        activeTab === 'craft'
+                          ? 'bg-white text-accent-600 border-b-2 border-accent-600'
+                          : 'bg-primary-50 text-navy-600 hover:bg-primary-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Package className="w-5 h-5" />
+                        <span>Needed to Craft</span>
+                      </div>
+                    </button>
+                  )}
+                  {(recycleValue || raiderCoins) && (
+                    <button
+                      onClick={() => setActiveTab('recycle')}
+                      className={`flex-1 px-6 py-4 font-semibold transition-colors ${
+                        activeTab === 'recycle'
+                          ? 'bg-white text-accent-600 border-b-2 border-accent-600'
+                          : 'bg-primary-50 text-navy-600 hover:bg-primary-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Recycle className="w-5 h-5" />
+                        <span>Recycle Value</span>
+                      </div>
+                    </button>
+                  )}
+                </div>
+                
+                {/* Tab Content */}
+                <div className="p-6">
+                  {/* Crafting Tab */}
+                  {activeTab === 'craft' && neededToCraft.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -813,16 +1020,11 @@ const ItemDetail = () => {
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
-            
-            {/* Recycle Value */}
-            {(recycleValue || raiderCoins) && (
-              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
-                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
-                  <Recycle className="w-5 h-5" />
-                  Recycle Value
-                </h2>
+                  )}
+                  
+                  {/* Recycle Tab */}
+                  {activeTab === 'recycle' && (recycleValue || raiderCoins) && (
+                    <div>
                 
                 <div className="flex items-center gap-4 mb-4 text-lg">
                   {raiderCoins && (
@@ -945,6 +1147,9 @@ const ItemDetail = () => {
                     </div>
                   </div>
                 )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             
