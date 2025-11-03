@@ -27,6 +27,10 @@ const Traders = () => {
     return ['all', ...new Set(allLocations)]
   }, [traders])
   
+  // Check if we have meaningful filter data
+  const hasTypeData = types.length > 1 // More than just 'all'
+  const hasLocationData = locations.length > 1 // More than just 'all'
+  
   // Filter traders based on search, type, and location
   const filteredTraders = useMemo(() => {
     return traders.filter(trader => {
@@ -72,7 +76,7 @@ const Traders = () => {
         
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-primary-200 p-6 mb-6">
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className={`grid gap-4 ${hasTypeData || hasLocationData ? 'md:grid-cols-3' : 'md:grid-cols-1'}`}>
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-400 w-5 h-5" />
@@ -85,41 +89,45 @@ const Traders = () => {
               />
             </div>
             
-            {/* Type Filter */}
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-400 w-5 h-5" />
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none appearance-none bg-white"
-              >
-                {types.map(type => (
-                  <option key={type} value={type}>
-                    {type === 'all' ? 'All Types' : type}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Type Filter - Only show if data exists */}
+            {hasTypeData && (
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-400 w-5 h-5" />
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none appearance-none bg-white"
+                >
+                  {types.map(type => (
+                    <option key={type} value={type}>
+                      {type === 'all' ? 'All Types' : type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             
-            {/* Location Filter */}
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-400 w-5 h-5" />
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none appearance-none bg-white"
-              >
-                {locations.map(location => (
-                  <option key={location} value={location}>
-                    {location === 'all' ? 'All Locations' : location}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Location Filter - Only show if data exists */}
+            {hasLocationData && (
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-400 w-5 h-5" />
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none appearance-none bg-white"
+                >
+                  {locations.map(location => (
+                    <option key={location} value={location}>
+                      {location === 'all' ? 'All Locations' : location}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           
           {/* Clear Filters */}
-          {(searchQuery || selectedType !== 'all' || selectedLocation !== 'all') && (
+          {(searchQuery || (hasTypeData && selectedType !== 'all') || (hasLocationData && selectedLocation !== 'all')) && (
             <button
               onClick={() => {
                 setSearchQuery('')
@@ -158,7 +166,7 @@ const Traders = () => {
         ) : (
           <div className="text-center py-12">
             <p className="text-navy-500 text-lg">No traders found matching your criteria.</p>
-            {(searchQuery || selectedType !== 'all' || selectedLocation !== 'all') && (
+            {(searchQuery || (hasTypeData && selectedType !== 'all') || (hasLocationData && selectedLocation !== 'all')) && (
               <button
                 onClick={() => {
                   setSearchQuery('')

@@ -5,29 +5,25 @@ interface ItemCardProps {
   item: any
 }
 
-const getRarityColor = (rarity?: string) => {
-  const colors: Record<string, string> = {
-    common: 'bg-gray-500 text-white',
-    uncommon: 'bg-green-600 text-white',
-    rare: 'bg-blue-600 text-white',
-    epic: 'bg-purple-600 text-white',
-    legendary: 'bg-orange-600 text-white',
+const getRarityStyles = (rarity?: string): { backgroundColor: string; color: string } => {
+  const rarityLower = rarity?.toLowerCase() || ''
+  
+  const styles: Record<string, { backgroundColor: string; color: string }> = {
+    legendary: { backgroundColor: '#6D4D2D', color: '#FFB366' },
+    epic: { backgroundColor: '#5D2D6D', color: '#C97FFF' },
+    rare: { backgroundColor: '#2D4D6D', color: '#6BA3FF' },
+    common: { backgroundColor: '#3D3D3D', color: '#ffffff' },
+    uncommon: { backgroundColor: '#2D5A2D', color: '#7FFF7F' },
   }
   
-  return colors[rarity?.toLowerCase() || ''] || 'bg-navy-600 text-white'
+  return styles[rarityLower] || { backgroundColor: '#3D3D3D', color: '#ffffff' }
 }
 
+// Item type tags now use rarity colors - this function is kept for fallback but should use rarity instead
 const getItemTypeColor = (type?: string) => {
-  const colors: Record<string, string> = {
-    'quick use': 'bg-green-600 text-white',
-    consumable: 'bg-green-600 text-white',
-    weapon: 'bg-red-600 text-white',
-    armor: 'bg-blue-600 text-white',
-    material: 'bg-gray-600 text-white',
-    resource: 'bg-yellow-600 text-white',
-  }
-  
-  return colors[type?.toLowerCase() || ''] || 'bg-navy-600 text-white'
+  // Item types will use rarity colors based on the item's rarity
+  // This is just a fallback
+  return 'bg-navy-600 text-white'
 }
 
 const ItemCard = ({ item }: ItemCardProps) => {
@@ -44,10 +40,10 @@ const ItemCard = ({ item }: ItemCardProps) => {
   return (
     <Link
       to={`/items/${item.id}`}
-      className="group bg-white rounded-xl border border-primary-200 hover:border-accent-400 transition-all hover:shadow-xl overflow-hidden"
+      className="group bg-white rounded-xl border border-primary-200 hover:border-accent-400 transition-all hover:shadow-xl overflow-hidden flex flex-col h-full"
     >
-      {/* Image Section */}
-      <div className="bg-gradient-to-br from-primary-100 to-primary-200 p-6 flex items-center justify-center h-48 relative">
+      {/* Image Section - Transparent Background */}
+      <div className="bg-transparent p-6 flex items-center justify-center h-48 relative">
         {itemImage ? (
           <img 
             src={itemImage} 
@@ -68,19 +64,34 @@ const ItemCard = ({ item }: ItemCardProps) => {
       </div>
       
       {/* Content Section */}
-      <div className="p-5 bg-primary-50">
+      <div className="p-5 bg-primary-50 flex-1 flex flex-col">
         {/* Badges */}
         <div className="flex flex-wrap gap-2 mb-3">
-          {itemType && (
-            <span className={`px-2 py-1 text-xs font-bold rounded ${getItemTypeColor(itemType)}`}>
-              {itemType}
-            </span>
-          )}
-          {item.rarity && (
-            <span className={`px-2 py-1 text-xs font-bold rounded ${getRarityColor(item.rarity)}`}>
-              {item.rarity}
-            </span>
-          )}
+          {itemType && (() => {
+            // Use rarity colors for item type tags
+            const rarityStyles = item.rarity 
+              ? getRarityStyles(item.rarity)
+              : { backgroundColor: '#3D3D3D', color: '#ffffff' } // Default to common if no rarity
+            return (
+              <span 
+                className="px-2 py-1 text-xs font-bold rounded"
+                style={rarityStyles}
+              >
+                {itemType}
+              </span>
+            )
+          })()}
+          {item.rarity && (() => {
+            const rarityStyles = getRarityStyles(item.rarity)
+            return (
+              <span 
+                className="px-2 py-1 text-xs font-bold rounded"
+                style={rarityStyles}
+              >
+                {item.rarity}
+              </span>
+            )
+          })()}
         </div>
         
         {/* Title */}
@@ -96,7 +107,7 @@ const ItemCard = ({ item }: ItemCardProps) => {
         )}
         
         {/* Stats Grid */}
-        <div className="space-y-2 mb-4">
+        <div className="space-y-2 mb-4 flex-1">
           {/* Helper function to check if a value is meaningful (not 0, null, undefined, or empty) */}
           {(() => {
             const hasValue = (val: any): boolean => {
@@ -210,7 +221,7 @@ const ItemCard = ({ item }: ItemCardProps) => {
         </div>
         
         {/* Footer - Weight and Recycle Value */}
-        <div className="flex items-center justify-between pt-4 border-t border-primary-200">
+        <div className="flex items-center justify-between pt-4 border-t border-primary-200 mt-auto">
           {(() => {
             const hasValue = (val: any): boolean => {
               if (val === null || val === undefined) return false

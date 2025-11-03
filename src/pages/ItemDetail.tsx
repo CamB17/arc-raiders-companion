@@ -5,16 +5,18 @@ import { useItem, useArcs, findArcsThatDropItem } from '../hooks/useArcRaidersAp
 import { ArrowLeft, Weight, Coins, Package, User, TrendingUp, Recycle, Target } from 'lucide-react'
 import ItemPreview from '../components/ItemPreview'
 
-const getRarityColor = (rarity?: string) => {
-  const colors: Record<string, string> = {
-    common: 'bg-gray-500 text-white',
-    uncommon: 'bg-green-600 text-white',
-    rare: 'bg-blue-600 text-white',
-    epic: 'bg-purple-600 text-white',
-    legendary: 'bg-orange-600 text-white',
+const getRarityStyles = (rarity?: string): { backgroundColor: string; color: string } => {
+  const rarityLower = rarity?.toLowerCase() || ''
+  
+  const styles: Record<string, { backgroundColor: string; color: string }> = {
+    legendary: { backgroundColor: '#6D4D2D', color: '#FFB366' },
+    epic: { backgroundColor: '#5D2D6D', color: '#C97FFF' },
+    rare: { backgroundColor: '#2D4D6D', color: '#6BA3FF' },
+    common: { backgroundColor: '#3D3D3D', color: '#ffffff' },
+    uncommon: { backgroundColor: '#2D5A2D', color: '#7FFF7F' },
   }
   
-  return colors[rarity?.toLowerCase() || ''] || 'bg-navy-600 text-white'
+  return styles[rarityLower] || { backgroundColor: '#3D3D3D', color: '#ffffff' }
 }
 
 const getItemTypeColor = (type?: string) => {
@@ -175,8 +177,8 @@ const ItemDetail = () => {
           {/* Left Column - Item Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden sticky top-6">
-              {/* Image */}
-              <div className="bg-gradient-to-br from-green-600 to-green-800 p-8 flex items-center justify-center h-64 relative">
+              {/* Image - Transparent Background */}
+              <div className="bg-transparent p-8 flex items-center justify-center h-64 relative">
                 {itemImage ? (
                   <img 
                     src={itemImage} 
@@ -198,16 +200,31 @@ const ItemDetail = () => {
               <div className="p-6 bg-primary-50">
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {itemType && (
-                    <span className={`px-3 py-1 text-xs font-bold rounded ${getItemTypeColor(itemType)}`}>
-                      {itemType}
-                    </span>
-                  )}
-                  {item.rarity && (
-                    <span className={`px-3 py-1 text-xs font-bold rounded ${getRarityColor(item.rarity)}`}>
-                      {item.rarity}
-                    </span>
-                  )}
+                  {itemType && (() => {
+                    // Use rarity colors for item type tags
+                    const rarityStyles = item.rarity 
+                      ? getRarityStyles(item.rarity)
+                      : { backgroundColor: '#3D3D3D', color: '#ffffff' } // Default to common if no rarity
+                    return (
+                      <span 
+                        className="px-3 py-1 text-xs font-bold rounded"
+                        style={rarityStyles}
+                      >
+                        {itemType}
+                      </span>
+                    )
+                  })()}
+                  {item.rarity && (() => {
+                    const rarityStyles = getRarityStyles(item.rarity)
+                    return (
+                      <span 
+                        className="px-3 py-1 text-xs font-bold rounded"
+                        style={rarityStyles}
+                      >
+                        {item.rarity}
+                      </span>
+                    )
+                  })()}
                 </div>
                 
                 {/* Title */}
@@ -541,11 +558,17 @@ const ItemDetail = () => {
                             <span className="text-sm font-medium text-navy-800 group-hover:text-accent-600 transition-colors text-center">
                               {variantName}
                             </span>
-                            {variantRarity && (
-                              <span className={`mt-1 px-2 py-0.5 text-xs font-bold rounded ${getRarityColor(variantRarity)}`}>
-                                {variantRarity}
-                              </span>
-                            )}
+                            {variantRarity && (() => {
+                              const variantStyles = getRarityStyles(variantRarity)
+                              return (
+                                <span 
+                                  className="mt-1 px-2 py-0.5 text-xs font-bold rounded"
+                                  style={variantStyles}
+                                >
+                                  {variantRarity}
+                                </span>
+                              )
+                            })()}
                           </Link>
                         )
                       })}
@@ -998,11 +1021,17 @@ const ItemDetail = () => {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <h3 className="text-lg font-semibold text-navy-800">{arc.name}</h3>
-                              {arc.difficulty && (
-                                <span className={`px-2 py-1 text-xs font-bold rounded ${getRarityColor(arc.difficulty)}`}>
-                                  {arc.difficulty}
-                                </span>
-                              )}
+                              {arc.difficulty && (() => {
+                                const difficultyStyles = getRarityStyles(arc.difficulty)
+                                return (
+                                  <span 
+                                    className="px-2 py-1 text-xs font-bold rounded"
+                                    style={difficultyStyles}
+                                  >
+                                    {arc.difficulty}
+                                  </span>
+                                )
+                              })()}
                               {arc.type && (
                                 <span className="px-2 py-1 text-xs font-medium rounded bg-navy-100 text-navy-700">
                                   {arc.type}
