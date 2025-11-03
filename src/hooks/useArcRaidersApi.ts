@@ -451,35 +451,165 @@ export const useArcRaidersData = <T = any>(
 
 /**
  * Hook to fetch all items with pagination
+ * Automatically fetches all pages if fetchAll is true (default)
  */
-export const useItems = (params?: ItemsQueryParams) => {
+export const useItems = (params?: ItemsQueryParams & { fetchAll?: boolean }) => {
+  const { fetchAll = true, ...queryParams } = params || {}
   const defaultParams: ItemsQueryParams = {
     page: 1,
-    limit: 100,
+    limit: fetchAll ? 1000 : 100, // Try to fetch all items in one request if fetchAll is true
     includeComponents: true,
-    ...params,
+    ...queryParams,
   }
   
   return useQuery<PaginatedResponse<ArcRaidersItem>>({
-    queryKey: ['arc-raiders', 'items', defaultParams],
+    queryKey: ['arc-raiders', 'items', defaultParams, fetchAll],
     queryFn: async () => {
       try {
+        // First, try to fetch with high limit to get all items in one request
         const response = await axios.get(`${BASE_URL}/items`, {
           params: defaultParams,
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           },
-          timeout: 15000,
+          timeout: 30000, // Increased timeout for larger requests
         })
         
         if (response.data) {
-          console.log(`✓ Successfully fetched ${response.data.data?.length || 0} items`)
+          const items = response.data.data || []
+          const pagination = response.data.pagination
+          
+          // If fetchAll is true and there are more pages, fetch all pages
+          if (fetchAll && pagination && pagination.hasNextPage && pagination.totalPages > 1) {
+            console.log(`📄 Fetching all pages: ${pagination.totalPages} total pages`)
+            
+            // Fetch remaining pages in parallel
+            const pagePromises: Promise<any>[] = []
+            for (let page = 2; page <= pagination.totalPages; page++) {
+              pagePromises.push(
+                axios.get(`${BASE_URL}/items`, {
+                  params: {
+                    ...defaultParams,
+                    page,
+                    limit: defaultParams.limit || 1000,
+                  },
+                  headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                  },
+                  timeout: 30000,
+                })
+              )
+            }
+            
+            // Wait for all pages to load
+            const pageResponses = await Promise.all(pagePromises)
+            
+            // Combine all items from all pages
+            const allItems = [...items]
+            pageResponses.forEach((pageResponse) => {
+              if (pageResponse.data?.data) {
+                allItems.push(...pageResponse.data.data)
+              }
+            })
+            
+            console.log(`✓ Successfully fetched ${allItems.length} items across ${pagination.totalPages} pages`)
+            
+            return {
+              data: allItems,
+              pagination: {
+                ...pagination,
+                page: 1,
+                total: allItems.length,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPrevPage: false,
+              },
+            }
+          }
+          
+          console.log(`✓ Successfully fetched ${items.length} items`)
           return response.data
         }
         
         throw new Error('No data received')
-      } catch (error) {
+      } catch (error: any) {
+        // If the request fails with a high limit, try with lower limit and pagination
+        if (fetchAll && defaultParams.limit && defaultParams.limit > 100) {
+          console.log(`⚠ High limit request failed, trying with pagination...`)
+          try {
+            // Fetch first page with smaller limit
+            const firstResponse = await axios.get(`${BASE_URL}/items`, {
+              params: {
+                ...defaultParams,
+                limit: 100,
+              },
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+              timeout: 15000,
+            })
+            
+            if (firstResponse.data) {
+              const firstItems = firstResponse.data.data || []
+              const firstPagination = firstResponse.data.pagination
+              
+              if (firstPagination && firstPagination.hasNextPage && firstPagination.totalPages > 1) {
+                console.log(`📄 Fetching all pages with pagination: ${firstPagination.totalPages} total pages`)
+                
+                // Fetch remaining pages
+                const pagePromises: Promise<any>[] = []
+                for (let page = 2; page <= firstPagination.totalPages; page++) {
+                  pagePromises.push(
+                    axios.get(`${BASE_URL}/items`, {
+                      params: {
+                        ...defaultParams,
+                        page,
+                        limit: 100,
+                      },
+                      headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                      },
+                      timeout: 15000,
+                    })
+                  )
+                }
+                
+                const pageResponses = await Promise.all(pagePromises)
+                
+                // Combine all items
+                const allItems = [...firstItems]
+                pageResponses.forEach((pageResponse) => {
+                  if (pageResponse.data?.data) {
+                    allItems.push(...pageResponse.data.data)
+                  }
+                })
+                
+                console.log(`✓ Successfully fetched ${allItems.length} items across ${firstPagination.totalPages} pages`)
+                
+                return {
+                  data: allItems,
+                  pagination: {
+                    ...firstPagination,
+                    page: 1,
+                    total: allItems.length,
+                    totalPages: 1,
+                    hasNextPage: false,
+                    hasPrevPage: false,
+                  },
+                }
+              }
+              
+              return firstResponse.data
+            }
+          } catch (retryError) {
+            console.error('✗ Failed to fetch items with pagination fallback', retryError)
+          }
+        }
+        
         console.error('✗ Failed to fetch items', error)
         throw error
       }

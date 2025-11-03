@@ -40,10 +40,17 @@ const TraderDetail = () => {
       item.name === itemRef.name
     )
     
-    return fullItem || {
+    if (fullItem) {
+      return fullItem
+    }
+    
+    // Return fallback with image from itemRef - check all possible image fields
+    return {
       id: itemId,
       name: itemRef.name || itemId,
-      image: itemRef.image || itemRef.icon || itemRef.imageUrl,
+      icon: itemRef.icon || itemRef.image || itemRef.imageUrl || itemRef.thumbnail,
+      image: itemRef.image || itemRef.icon || itemRef.imageUrl || itemRef.thumbnail,
+      imageUrl: itemRef.imageUrl || itemRef.image || itemRef.icon,
       rarity: itemRef.rarity,
     }
   }
@@ -60,10 +67,17 @@ const TraderDetail = () => {
       quest.name === questRef.name
     )
     
-    return fullQuest || {
+    if (fullQuest) {
+      return fullQuest
+    }
+    
+    // Return fallback with image from questRef - check all possible image fields
+    return {
       id: questId,
       name: questRef.name || questId,
-      image: questRef.image || questRef.icon || questRef.imageUrl,
+      icon: questRef.icon || questRef.image || questRef.imageUrl || questRef.thumbnail,
+      image: questRef.image || questRef.icon || questRef.imageUrl || questRef.thumbnail,
+      imageUrl: questRef.imageUrl || questRef.image || questRef.icon,
     }
   }
   
@@ -257,112 +271,153 @@ const TraderDetail = () => {
           
           {/* Right Column - Details */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Items Sold */}
-            {itemsSold.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
-                <h2 className="text-2xl font-techno font-bold text-navy-800 mb-6 flex items-center gap-3">
-                  <Package className="w-6 h-6 text-accent-500" />
-                  Items Sold
-                </h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-primary-200">
-                        <th className="text-left py-3 px-2 text-sm font-semibold text-navy-600">Item</th>
-                        <th className="text-left py-3 px-2 text-sm font-semibold text-navy-600">Price</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {itemsSold.map((itemRef: any, index: number) => {
-                        const itemDetails = getItemDetails(itemRef)
-                        const itemPrice = itemRef.price || itemRef.value || 'N/A'
-                        
-                        return (
-                          <tr key={index} className="border-b border-primary-100 hover:bg-primary-50 transition-colors">
-                            <td className="py-3 px-2">
-                              {itemDetails ? (
+            {/* Items Sold and Quests Provided - Side by Side with Scrolling */}
+            {(itemsSold.length > 0 || questsProvided.length > 0) && (
+              <div className={`grid gap-6 items-start ${itemsSold.length > 0 && questsProvided.length > 0 ? 'md:grid-cols-2' : ''}`}>
+                {/* Items Sold */}
+                {itemsSold.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden flex flex-col">
+                    {/* Sticky Header */}
+                    <div className="sticky top-0 bg-gradient-to-r from-primary-50 to-white border-b border-primary-200 p-6 z-10 backdrop-blur-sm">
+                      <h2 className="text-2xl font-techno font-bold text-navy-800 flex items-center gap-3">
+                        <Package className="w-6 h-6 text-accent-500" />
+                        Items Sold
+                        <span className="text-lg font-normal text-navy-500">({itemsSold.length})</span>
+                      </h2>
+                    </div>
+                    {/* Scrollable Content */}
+                    <div className="overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+                      <div className="p-6 pt-0">
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="sticky top-0 bg-white z-10">
+                              <tr className="border-b-2 border-primary-300">
+                                <th className="text-left py-3 px-2 text-sm font-semibold text-navy-600 bg-gradient-to-r from-white to-primary-50">Item</th>
+                                <th className="text-left py-3 px-2 text-sm font-semibold text-navy-600 bg-gradient-to-r from-primary-50 to-white">Price</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {itemsSold.map((itemRef: any, index: number) => {
+                                const itemDetails = getItemDetails(itemRef)
+                                const itemPrice = itemRef.price || itemRef.value || 'N/A'
+                                
+                                return (
+                                  <tr key={index} className="border-b border-primary-100 hover:bg-gradient-to-r hover:from-primary-50 hover:to-white transition-colors group">
+                                    <td className="py-3 px-2">
+                                      {itemDetails ? (
+                                        <Link
+                                          to={`/items/${itemDetails.id}`}
+                                          className="flex items-center gap-3 hover:text-accent-500 transition-colors"
+                                        >
+                                          {(() => {
+                                            // Get the best available image - API uses 'icon' as primary field
+                                            const itemImage = itemDetails.icon || itemDetails.image || itemDetails.imageUrl || itemDetails.thumbnail
+                                            return itemImage ? (
+                                              <img 
+                                                src={itemImage} 
+                                                alt={itemDetails.name}
+                                                className="w-10 h-10 object-contain flex-shrink-0 group-hover:scale-110 transition-transform"
+                                                onError={(e) => {
+                                                  // Try fallback if webp fails
+                                                  const img = e.currentTarget as HTMLImageElement
+                                                  if (img.src.includes('.webp')) {
+                                                    img.src = img.src.replace('.webp', '.png')
+                                                    return
+                                                  }
+                                                  // If PNG also fails or already tried, hide the image
+                                                  img.style.display = 'none'
+                                                }}
+                                              />
+                                            ) : null
+                                          })()}
+                                          <div className="min-w-0">
+                                            <div className="font-medium text-navy-800 truncate">{itemDetails.name}</div>
+                                            {itemDetails.rarity && (
+                                              <div className="text-xs text-navy-500">{itemDetails.rarity}</div>
+                                            )}
+                                          </div>
+                                        </Link>
+                                      ) : (
+                                        <div className="font-medium text-navy-800">{itemRef.name || itemRef.item || 'Unknown Item'}</div>
+                                      )}
+                                    </td>
+                                    <td className="py-3 px-2">
+                                      <div className="flex items-center gap-2">
+                                        <Coins className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                                        <span className="text-navy-800 font-bold text-lg whitespace-nowrap">{itemPrice}</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Quests Provided */}
+                {questsProvided.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-primary-50 to-white border-b border-primary-200 p-6">
+                      <h2 className="text-2xl font-techno font-bold text-navy-800 flex items-center gap-3">
+                        <Target className="w-6 h-6 text-accent-500" />
+                        Quests Provided
+                        <span className="text-lg font-normal text-navy-500">({questsProvided.length})</span>
+                      </h2>
+                    </div>
+                    {/* Content - Natural height with max for scrolling */}
+                    <div className={`${questsProvided.length > 5 ? 'overflow-y-auto' : ''}`} style={questsProvided.length > 5 ? { maxHeight: 'calc(100vh - 300px)' } : {}}>
+                      <div className="p-6 pt-4 space-y-4">
+                        {questsProvided.map((questRef: any, index: number) => {
+                          const questDetails = getQuestDetails(questRef)
+                          
+                          return (
+                            <div key={index} className="border border-primary-200 rounded-lg p-4 hover:border-accent-400 hover:shadow-md transition-all bg-gradient-to-r from-white to-primary-50/30">
+                              {questDetails ? (
                                 <Link
-                                  to={`/items/${itemDetails.id}`}
-                                  className="flex items-center gap-3 hover:text-accent-500 transition-colors"
+                                  to={`/quests/${questDetails.id}`}
+                                  className="flex items-center gap-4 hover:text-accent-500 transition-colors"
                                 >
-                                  {itemDetails.image && (
-                                    <img 
-                                      src={itemDetails.image} 
-                                      alt={itemDetails.name}
-                                      className="w-10 h-10 object-contain"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none'
-                                      }}
-                                    />
-                                  )}
-                                  <div>
-                                    <div className="font-medium text-navy-800">{itemDetails.name}</div>
-                                    {itemDetails.rarity && (
-                                      <div className="text-xs text-navy-500">{itemDetails.rarity}</div>
+                                  {(() => {
+                                    const questImage = questDetails.icon || questDetails.image || questDetails.imageUrl || questDetails.thumbnail
+                                    return questImage ? (
+                                      <img 
+                                        src={questImage} 
+                                        alt={questDetails.name}
+                                        className="w-16 h-16 object-contain rounded-lg flex-shrink-0 shadow-sm"
+                                        onError={(e) => {
+                                          // Try fallback if webp fails
+                                          const img = e.currentTarget as HTMLImageElement
+                                          if (img.src.includes('.webp')) {
+                                            img.src = img.src.replace('.webp', '.png')
+                                            return
+                                          }
+                                          img.style.display = 'none'
+                                        }}
+                                      />
+                                    ) : null
+                                  })()}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-navy-800 text-lg truncate">{questDetails.name}</div>
+                                    {questDetails.description && (
+                                      <div className="text-sm text-navy-600 mt-1 line-clamp-2">{questDetails.description}</div>
                                     )}
                                   </div>
                                 </Link>
                               ) : (
-                                <div className="font-medium text-navy-800">{itemRef.name || itemRef.item || 'Unknown Item'}</div>
-                              )}
-                            </td>
-                            <td className="py-3 px-2">
-                              <div className="flex items-center gap-2">
-                                <Coins className="w-4 h-4 text-yellow-600" />
-                                <span className="text-navy-800 font-bold text-lg">{itemPrice}</span>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-            
-            {/* Quests Provided */}
-            {questsProvided.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
-                <h2 className="text-2xl font-techno font-bold text-navy-800 mb-6 flex items-center gap-3">
-                  <Target className="w-6 h-6 text-accent-500" />
-                  Quests Provided
-                </h2>
-                <div className="space-y-4">
-                  {questsProvided.map((questRef: any, index: number) => {
-                    const questDetails = getQuestDetails(questRef)
-                    
-                    return (
-                      <div key={index} className="border border-primary-200 rounded-lg p-4 hover:border-accent-400 transition-colors">
-                        {questDetails ? (
-                          <Link
-                            to={`/quests/${questDetails.id}`}
-                            className="flex items-center gap-4 hover:text-accent-500 transition-colors"
-                          >
-                            {questDetails.image && (
-                              <img 
-                                src={questDetails.image} 
-                                alt={questDetails.name}
-                                className="w-16 h-16 object-contain rounded-lg"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none'
-                                }}
-                              />
-                            )}
-                            <div className="flex-1">
-                              <div className="font-semibold text-navy-800 text-lg">{questDetails.name}</div>
-                              {questDetails.description && (
-                                <div className="text-sm text-navy-600 mt-1 line-clamp-2">{questDetails.description}</div>
+                                <div className="font-semibold text-navy-800 text-lg">{questRef.name || questRef.quest || 'Unknown Quest'}</div>
                               )}
                             </div>
-                          </Link>
-                        ) : (
-                          <div className="font-semibold text-navy-800 text-lg">{questRef.name || questRef.quest || 'Unknown Quest'}</div>
-                        )}
+                          )
+                        })}
                       </div>
-                    )
-                  })}
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             

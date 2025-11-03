@@ -6,16 +6,18 @@ interface ItemPreviewProps {
   position: { x: number; y: number }
 }
 
-const getRarityColor = (rarity?: string) => {
-  const colors: Record<string, string> = {
-    common: 'bg-gray-500 text-white',
-    uncommon: 'bg-green-600 text-white',
-    rare: 'bg-blue-600 text-white',
-    epic: 'bg-purple-600 text-white',
-    legendary: 'bg-orange-600 text-white',
+const getRarityStyles = (rarity?: string): { backgroundColor: string; color: string } => {
+  const rarityLower = rarity?.toLowerCase() || ''
+  
+  const styles: Record<string, { backgroundColor: string; color: string }> = {
+    legendary: { backgroundColor: '#6D4D2D', color: '#FFB366' },
+    epic: { backgroundColor: '#5D2D6D', color: '#C97FFF' },
+    rare: { backgroundColor: '#2D4D6D', color: '#6BA3FF' },
+    common: { backgroundColor: '#3D3D3D', color: '#ffffff' },
+    uncommon: { backgroundColor: '#2D5A2D', color: '#7FFF7F' },
   }
   
-  return colors[rarity?.toLowerCase() || ''] || 'bg-navy-600 text-white'
+  return styles[rarityLower] || { backgroundColor: '#3D3D3D', color: '#ffffff' }
 }
 
 const getItemTypeColor = (type?: string) => {
@@ -65,8 +67,8 @@ const ItemPreview = ({ itemId, position }: ItemPreviewProps) => {
         overflowY: 'auto'
       }}
     >
-      {/* Image */}
-      <div className="bg-gradient-to-br from-primary-100 to-primary-200 p-4 flex items-center justify-center h-32">
+      {/* Image - Transparent Background */}
+      <div className="bg-transparent p-4 flex items-center justify-center h-32">
         {itemImage ? (
           <img 
             src={itemImage} 
@@ -89,16 +91,31 @@ const ItemPreview = ({ itemId, position }: ItemPreviewProps) => {
       <div className="p-4">
         {/* Badges */}
         <div className="flex flex-wrap gap-2 mb-2">
-          {itemType && (
-            <span className={`px-2 py-1 text-xs font-bold rounded ${getItemTypeColor(itemType)}`}>
-              {itemType}
-            </span>
-          )}
-          {item.rarity && (
-            <span className={`px-2 py-1 text-xs font-bold rounded ${getRarityColor(item.rarity)}`}>
-              {item.rarity}
-            </span>
-          )}
+          {itemType && (() => {
+            // Use rarity colors for item type tags
+            const rarityStyles = item.rarity 
+              ? getRarityStyles(item.rarity)
+              : { backgroundColor: '#3D3D3D', color: '#ffffff' } // Default to common if no rarity
+            return (
+              <span 
+                className="px-2 py-1 text-xs font-bold rounded"
+                style={rarityStyles}
+              >
+                {itemType}
+              </span>
+            )
+          })()}
+          {item.rarity && (() => {
+            const rarityStyles = getRarityStyles(item.rarity)
+            return (
+              <span 
+                className="px-2 py-1 text-xs font-bold rounded"
+                style={rarityStyles}
+              >
+                {item.rarity}
+              </span>
+            )
+          })()}
         </div>
         
         {/* Title */}

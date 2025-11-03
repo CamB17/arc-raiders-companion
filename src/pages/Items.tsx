@@ -1,7 +1,22 @@
 import { useState, useMemo } from 'react'
 import { useItems } from '../hooks/useArcRaidersApi'
-import { Search, Filter } from 'lucide-react'
+import { Search, Filter, ChevronDown } from 'lucide-react'
 import ItemCard from '../components/ItemCard'
+
+// Rarity color styles matching the rarity tags
+const getRarityStyles = (rarity?: string): { backgroundColor: string; color: string } => {
+  const rarityLower = rarity?.toLowerCase() || ''
+  
+  const styles: Record<string, { backgroundColor: string; color: string }> = {
+    legendary: { backgroundColor: '#6D4D2D', color: '#FFB366' },
+    epic: { backgroundColor: '#5D2D6D', color: '#C97FFF' },
+    rare: { backgroundColor: '#2D4D6D', color: '#6BA3FF' },
+    common: { backgroundColor: '#3D3D3D', color: '#ffffff' },
+    uncommon: { backgroundColor: '#2D5A2D', color: '#7FFF7F' },
+  }
+  
+  return styles[rarityLower] || { backgroundColor: '#3D3D3D', color: '#ffffff' }
+}
 
 // Category mapping from item_type to display categories
 // Maps API item_type values directly to display categories
@@ -177,6 +192,7 @@ const Items = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedRarity, setSelectedRarity] = useState<string>('all')
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory>('All')
+  const [rarityDropdownOpen, setRarityDropdownOpen] = useState(false)
   
   // Extract items from paginated response
   const items = response?.data || []
@@ -288,20 +304,63 @@ const Items = () => {
               />
             </div>
             
-            {/* Rarity Filter */}
+            {/* Rarity Filter - Custom Dropdown */}
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-400 w-5 h-5" />
-              <select
-                value={selectedRarity}
-                onChange={(e) => setSelectedRarity(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none appearance-none bg-white"
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-navy-400 w-5 h-5 z-10" />
+              <button
+                type="button"
+                onClick={() => setRarityDropdownOpen(!rarityDropdownOpen)}
+                className="w-full pl-10 pr-10 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none bg-white text-left flex items-center justify-between"
               >
-                {rarities.map(rarity => (
-                  <option key={rarity} value={rarity}>
-                    {rarity === 'all' ? 'All Rarities' : rarity}
-                  </option>
-                ))}
-              </select>
+                <span>
+                  {selectedRarity === 'all' ? 'All Rarities' : selectedRarity}
+                </span>
+                <ChevronDown className={`w-5 h-5 text-navy-400 transition-transform ${rarityDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {rarityDropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40"
+                    onClick={() => setRarityDropdownOpen(false)}
+                  />
+                  <div className="absolute z-50 mt-1 w-full bg-white border border-primary-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {rarities.map(rarity => {
+                      const isSelected = rarity === selectedRarity
+                      const rarityStyles = rarity === 'all' 
+                        ? { backgroundColor: 'transparent', color: '#1e293b' }
+                        : getRarityStyles(rarity)
+                      
+                      // For dropdown, use dark readable text with colored dot indicator
+                      // The text colors from tags are too light on white background
+                      return (
+                        <button
+                          key={rarity}
+                          type="button"
+                          onClick={() => {
+                            setSelectedRarity(rarity)
+                            setRarityDropdownOpen(false)
+                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-primary-50 transition-colors ${
+                            isSelected ? 'bg-primary-100' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {rarity !== 'all' && (
+                              <span 
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: rarityStyles.backgroundColor }}
+                              />
+                            )}
+                            <span className="font-medium text-navy-800">
+                              {rarity === 'all' ? 'All Rarities' : rarity}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
           
@@ -334,9 +393,9 @@ const Items = () => {
         
         {/* Items Display */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-primary-200 p-6 animate-pulse">
+              <div key={i} className="bg-white rounded-xl border border-primary-200 p-6 animate-pulse h-full">
                 <div className="h-6 bg-primary-200 rounded w-3/4 mb-4"></div>
                 <div className="h-4 bg-primary-100 rounded w-full mb-2"></div>
                 <div className="h-4 bg-primary-100 rounded w-2/3"></div>
@@ -368,7 +427,7 @@ const Items = () => {
                           {categoryItems.length}
                         </span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
                         {categoryItems.map((item) => (
                           <ItemCard key={item.id} item={item} />
                         ))}
@@ -379,7 +438,7 @@ const Items = () => {
             ) : (
               // If specific category selected, show just that category
               filteredItemsByCategory[selectedCategory] && filteredItemsByCategory[selectedCategory].length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
                   {filteredItemsByCategory[selectedCategory].map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
