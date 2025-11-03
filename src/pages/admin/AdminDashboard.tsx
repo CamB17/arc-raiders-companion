@@ -8,7 +8,8 @@ import {
   Wrench,
   Database,
   Plus,
-  BarChart3 
+  BarChart3,
+  Calendar 
 } from 'lucide-react'
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/Card'
 import Button from '@/components/Button'
@@ -22,6 +23,7 @@ import {
   useCustomGuides,
   useCustomBuilds,
 } from '@/hooks/useSupabase'
+import { useAllEvents } from '@/hooks/useEvents'
 
 const AdminDashboard = () => {
   const isConfigured = isSupabaseConfigured()
@@ -33,6 +35,7 @@ const AdminDashboard = () => {
   const { data: customLocations } = useCustomLocations()
   const { data: customGuides } = useCustomGuides()
   const { data: customBuilds } = useCustomBuilds()
+  const { data: events } = useAllEvents()
 
   const adminSections = [
     {
@@ -88,6 +91,15 @@ const AdminDashboard = () => {
       count: customBuilds?.length || 0,
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-50',
+    },
+    {
+      title: 'Events',
+      description: 'Manage in-game event schedules',
+      icon: Calendar,
+      path: '/admin/events',
+      count: events?.length || 0,
+      color: 'text-pink-600',
+      bgColor: 'bg-pink-50',
     },
   ]
 

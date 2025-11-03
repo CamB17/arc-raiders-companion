@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 import SearchModal from './SearchModal'
+import EventTimer from './EventTimer'
 
 const Header = () => {
   const location = useLocation()
@@ -81,6 +82,11 @@ const Header = () => {
                 </motion.div>
               ))}
             </nav>
+            
+            {/* Event Timer */}
+            <div className="hidden lg:block">
+              <EventTimer />
+            </div>
             
             {/* Search Button */}
             <motion.button
