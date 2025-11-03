@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Target, Award, ArrowRight } from 'lucide-react'
 
@@ -16,7 +16,7 @@ interface MapLocation {
 interface InteractiveMapProps {
   locations: MapLocation[]
   width?: number
-  height?: number
+  height?: number | string
 }
 
 const getDifficultyColor = (difficulty?: string) => {
@@ -31,29 +31,54 @@ const getDifficultyColor = (difficulty?: string) => {
   return colors[difficulty?.toLowerCase() || ''] || '#1e293b'
 }
 
-const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMapProps) => {
+const InteractiveMap = ({ locations, width = 800, height = '60vh' }: InteractiveMapProps) => {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null)
   const [hoveredLocation, setHoveredLocation] = useState<MapLocation | null>(null)
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width, height: typeof height === 'number' ? height : 600 })
+  
+  // Convert height prop to number for calculations
+  const heightValue = typeof height === 'number' ? height : 600
+  
+  // Handle container resize
+  useEffect(() => {
+    const updateSize = () => {
+      const container = document.querySelector('[data-map-container]') as HTMLElement
+      if (container) {
+        setContainerSize({
+          width: container.clientWidth,
+          height: container.clientHeight
+        })
+      }
+    }
+    
+    updateSize()
+    window.addEventListener('resize', updateSize)
+    return () => window.removeEventListener('resize', updateSize)
+  }, [])
   
   return (
-    <div className="relative bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl border-2 border-primary-300 p-6 overflow-hidden">
+    <div className="relative bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl border-2 border-primary-300 p-3 sm:p-6 overflow-hidden">
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDEwIDAgTCAwIDAgMCAxMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZGNjYmJlIiBzdHJva2Utd2lkdGg9IjAuNSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
       
       {/* Map Title */}
-      <div className="relative z-10 mb-4">
-        <h3 className="text-xl font-techno font-bold text-navy-800 flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-accent-600" />
+      <div className="relative z-10 mb-3 sm:mb-4">
+        <h3 className="text-lg sm:text-xl font-techno font-bold text-navy-800 flex items-center gap-2">
+          <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-accent-600 flex-shrink-0" />
           Quest Locations
         </h3>
-        <p className="text-sm text-navy-600 mt-1">Click on markers to view details</p>
+        <p className="text-xs sm:text-sm text-navy-600 mt-1">Click on markers to view details</p>
       </div>
       
       {/* Map Container */}
-      <div className="relative z-10 bg-white/50 rounded-lg border border-primary-300" style={{ width: '100%', height: `${height}px` }}>
+      <div 
+        data-map-container
+        className="relative z-10 bg-white/50 rounded-lg border border-primary-300 w-full"
+        style={{ height: typeof height === 'number' ? `${height}px` : height, minHeight: '300px' }}
+      >
         <svg
           width="100%"
           height="100%"
-          viewBox={`0 0 ${width} ${height}`}
+          viewBox={`0 0 ${width} ${heightValue}`}
           className="absolute inset-0"
           preserveAspectRatio="xMidYMid meet"
         >
@@ -76,7 +101,7 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
           {/* Draw location markers */}
           {locations.map((location) => {
             const x = (location.x / 100) * width
-            const y = (location.y / 100) * height
+            const y = (location.y / 100) * heightValue
             const isSelected = selectedLocation?.id === location.id
             const isHovered = hoveredLocation?.id === location.id
             const color = getDifficultyColor(location.difficulty)
@@ -129,7 +154,7 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
                 {/* Connection lines to show relationships */}
                 {location.region && locations.filter(l => l.region === location.region && l.id !== location.id).map(other => {
                   const otherX = (other.x / 100) * width
-                  const otherY = (other.y / 100) * height
+                  const otherY = (other.y / 100) * heightValue
                   return (
                     <line
                       key={`${location.id}-${other.id}`}
@@ -153,12 +178,12 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
         {/* Tooltip for hovered location */}
         {hoveredLocation && !selectedLocation && (
           <div
-            className="absolute bg-white rounded-lg shadow-xl border-2 border-accent-400 p-3 z-50 pointer-events-none"
+            className="absolute bg-white rounded-lg shadow-xl border-2 border-accent-400 p-2 sm:p-3 z-50 pointer-events-none"
             style={{
               left: `${(hoveredLocation.x / 100) * 100}%`,
               top: `${(hoveredLocation.y / 100) * 100 + 5}%`,
               transform: 'translate(-50%, 0)',
-              maxWidth: '200px',
+              maxWidth: 'min(200px, 90vw)',
             }}
           >
             <div className="flex items-center gap-2 mb-1">
@@ -177,16 +202,16 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
       
       {/* Selected location details panel */}
       {selectedLocation && (
-        <div className="relative z-10 mt-4 bg-white rounded-lg border-2 border-accent-400 shadow-xl p-4">
+        <div className="relative z-10 mt-4 bg-white rounded-lg border-2 border-accent-400 shadow-xl p-3 sm:p-4">
           <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <Award className="w-5 h-5 text-indigo-600" />
-                <h4 className="font-techno font-bold text-lg text-navy-800">{selectedLocation.name}</h4>
+                <Award className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 flex-shrink-0" />
+                <h4 className="font-techno font-bold text-base sm:text-lg text-navy-800 truncate">{selectedLocation.name}</h4>
               </div>
               {selectedLocation.location && (
-                <p className="text-sm text-navy-600 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-1" />
+                <p className="text-xs sm:text-sm text-navy-600 mb-2">
+                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1" />
                   {selectedLocation.location}
                 </p>
               )}
@@ -201,7 +226,7 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
             </div>
             <button
               onClick={() => setSelectedLocation(null)}
-              className="text-navy-400 hover:text-navy-600 transition-colors"
+              className="text-navy-400 hover:text-navy-600 transition-colors flex-shrink-0 ml-2"
               aria-label="Close"
             >
               ✕
@@ -209,16 +234,16 @@ const InteractiveMap = ({ locations, width = 800, height = 600 }: InteractiveMap
           </div>
           <Link
             to={`/quests/${selectedLocation.id}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors text-sm font-medium"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors text-xs sm:text-sm font-medium"
           >
             View Details
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
           </Link>
         </div>
       )}
       
       {/* Legend */}
-      <div className="relative z-10 mt-4 flex flex-wrap gap-4 text-xs">
+      <div className="relative z-10 mt-4 flex flex-wrap gap-2 sm:gap-4 text-xs">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500"></div>
           <span className="text-navy-600">Common</span>

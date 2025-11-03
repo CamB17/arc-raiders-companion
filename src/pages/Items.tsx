@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useItems } from '../hooks/useArcRaidersApi'
-import { Search, Filter, ChevronDown } from 'lucide-react'
+import { Search, Filter, ChevronDown, ChevronUp } from 'lucide-react'
 import ItemCard from '../components/ItemCard'
+import VariantGroupCard from '../components/VariantGroupCard'
 
 // Rarity color styles matching the rarity tags
 const getRarityStyles = (rarity?: string): { backgroundColor: string; color: string } => {
@@ -187,12 +188,91 @@ const CATEGORIES: ItemCategory[] = [
   'Misc',
 ]
 
+// Rarity order for sorting: common, uncommon, rare, epic, legendary
+const getRarityOrder = (rarity?: string): number => {
+  const rarityLower = rarity?.toLowerCase() || ''
+  const order: Record<string, number> = {
+    'common': 1,
+    'uncommon': 2,
+    'rare': 3,
+    'epic': 4,
+    'legendary': 5,
+  }
+  return order[rarityLower] || 0 // Items without rarity go first (0)
+}
+
+// Extract base name from variant names (e.g., "Ferro I" -> "Ferro")
+const extractBaseName = (name: string): string => {
+  // Match Roman numerals (IV, IX, VIII, VII, VI, V, III, II, I, X) or Arabic numerals at the end
+  // Match IV and IX before matching I, II, III to avoid partial matches
+  // Case-insensitive matching
+  const match = name.match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+  if (match) {
+    return name.replace(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i, '').trim()
+  }
+  return name
+}
+
+// Valid Roman numeral variants
+const VALID_VARIANTS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+
+// Check if a variant number is valid (excludes invalid ones like "IIII")
+const isValidVariant = (variant: string): boolean => {
+  return VALID_VARIANTS.includes(variant)
+}
+
+// Check for invalid variant patterns (like "IIII", "IIIII", etc.)
+const hasInvalidVariant = (name: string): boolean => {
+  // Check for invalid patterns: IIII (4 I's), IIIII (5 I's), etc., or any 4+ consecutive I's
+  // This catches invalid Roman numeral patterns that aren't valid variants
+  // Case-insensitive matching
+  const invalidMatch = name.match(/\s+I{4,}$/i) // 4 or more consecutive I's
+  return !!invalidMatch
+}
+
+// Check if an item name has a valid variant number
+const hasVariantNumber = (name: string): boolean => {
+  // First check for invalid variants (like "IIII")
+  if (hasInvalidVariant(name)) return false
+  
+  // Match Roman numerals (IV, IX, VIII, VII, VI, V, III, II, I, X) or Arabic numerals
+  // Match IV and IX before matching I, II, III to avoid partial matches
+  // Case-insensitive matching to handle "iii", "II", etc.
+  const match = name.match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+  if (!match) return false
+  
+  // Normalize the matched variant to uppercase for validation
+  const normalizedVariant = match[1].toUpperCase()
+  
+  // Validate that the matched variant is actually valid (not "IIII" or other invalid patterns)
+  return isValidVariant(normalizedVariant)
+}
+
+// Check if an item is the first variant (I or 1) - these should be shown
+const isFirstVariant = (name: string): boolean => {
+  const match = name.match(/\s+(I|1)$/i) // Case-insensitive
+  if (!match) return false
+  const normalizedVariant = match[1].toUpperCase()
+  return isValidVariant(normalizedVariant)
+}
+
+// Check if an item is a higher variant (II, III, IV, etc.) - these should be hidden
+const isHigherVariant = (name: string): boolean => {
+  // Match IV and IX before matching II, III to avoid partial matches
+  // Case-insensitive matching
+  const match = name.match(/\s+(IV|IX|VIII|VII|VI|V|III|II|X|2|3|4|5|6|7|8|9|10)$/i)
+  if (!match) return false
+  const normalizedVariant = match[1].toUpperCase()
+  return isValidVariant(normalizedVariant)
+}
+
 const Items = () => {
   const { data: response, isLoading, error } = useItems()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedRarity, setSelectedRarity] = useState<string>('all')
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory>('All')
   const [rarityDropdownOpen, setRarityDropdownOpen] = useState(false)
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   
   // Extract items from paginated response
   const items = response?.data || []
@@ -202,8 +282,8 @@ const Items = () => {
     if (items.length === 0) return ['all']
     return ['all', ...new Set(items.map(item => item.rarity).filter(Boolean))]
   }, [items])
-  
-  // Group items by category
+
+  // Group items by category and sort by rarity
   const itemsByCategory = useMemo(() => {
     const grouped: Record<string, typeof items> = {}
     
@@ -213,6 +293,19 @@ const Items = () => {
         grouped[category] = []
       }
       grouped[category].push(item)
+    })
+    
+    // Sort items within each category by rarity
+    Object.keys(grouped).forEach(category => {
+      grouped[category].sort((a, b) => {
+        const rarityOrderA = getRarityOrder(a.rarity)
+        const rarityOrderB = getRarityOrder(b.rarity)
+        if (rarityOrderA !== rarityOrderB) {
+          return rarityOrderA - rarityOrderB
+        }
+        // If same rarity, sort alphabetically by name
+        return (a.name || '').localeCompare(b.name || '')
+      })
     })
     
     return grouped
@@ -247,7 +340,7 @@ const Items = () => {
     return filtered
   }, [items, searchQuery, selectedRarity, selectedCategory])
   
-  // Group filtered items by category for display
+  // Group filtered items by category for display and sort by rarity
   const filteredItemsByCategory = useMemo(() => {
     const grouped: Record<string, typeof items> = {}
     
@@ -259,11 +352,58 @@ const Items = () => {
       grouped[category].push(item)
     })
     
+    // Sort items within each category by rarity
+    Object.keys(grouped).forEach(category => {
+      grouped[category].sort((a, b) => {
+        const rarityOrderA = getRarityOrder(a.rarity)
+        const rarityOrderB = getRarityOrder(b.rarity)
+        if (rarityOrderA !== rarityOrderB) {
+          return rarityOrderA - rarityOrderB
+        }
+        // If same rarity, sort alphabetically by name
+        return (a.name || '').localeCompare(b.name || '')
+      })
+    })
+    
     return grouped
   }, [getFilteredItems])
   
   // Calculate total count across all filtered categories
   const totalFilteredCount = getFilteredItems.length
+
+  // Toggle category expansion/collapse
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(category)) {
+        newSet.delete(category) // Expand (remove from collapsed set)
+      } else {
+        newSet.add(category) // Collapse (add to collapsed set)
+      }
+      return newSet
+    })
+  }
+
+  // Determine if a category section is expanded
+  const getIsExpanded = (category: string): boolean => {
+    // If viewing a specific category (not "All"), it should always be expanded
+    if (selectedCategory !== 'All') {
+      return category === selectedCategory
+    }
+    
+    // When viewing "All", check if category is collapsed
+    // Default is expanded (not in collapsedCategories)
+    return !collapsedCategories.has(category)
+  }
+
+  // Reset collapsed state when switching to "All" category
+  const handleCategoryChange = (category: ItemCategory) => {
+    setSelectedCategory(category)
+    // When switching to "All", reset collapsed state (all will be expanded by default)
+    if (category === 'All') {
+      setCollapsedCategories(new Set())
+    }
+  }
   
   if (error) {
     return (
@@ -290,7 +430,7 @@ const Items = () => {
         </div>
         
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-primary-200 p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-primary-200 p-4 sm:p-6 mb-6 sticky top-4 z-30 md:static">
           <div className="grid md:grid-cols-2 gap-4 mb-4">
             {/* Search */}
             <div className="relative">
@@ -300,7 +440,7 @@ const Items = () => {
                 placeholder="Search items..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none text-sm sm:text-base"
               />
             </div>
             
@@ -310,7 +450,7 @@ const Items = () => {
               <button
                 type="button"
                 onClick={() => setRarityDropdownOpen(!rarityDropdownOpen)}
-                className="w-full pl-10 pr-10 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none bg-white text-left flex items-center justify-between"
+                className="w-full pl-10 pr-10 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-accent-500 focus:border-transparent outline-none bg-white text-left flex items-center justify-between text-sm sm:text-base"
               >
                 <span>
                   {selectedRarity === 'all' ? 'All Rarities' : selectedRarity}
@@ -364,30 +504,34 @@ const Items = () => {
             </div>
           </div>
           
-          {/* Category Tabs */}
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-primary-200">
-            {availableCategories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  selectedCategory === category
-                    ? 'bg-accent-500 text-white shadow-md'
-                    : 'bg-primary-100 text-navy-700 hover:bg-primary-200'
-                }`}
-              >
-                {category}
-                {category !== 'All' && itemsByCategory[category] && (
-                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                    selectedCategory === category
-                      ? 'bg-white/20 text-white'
-                      : 'bg-primary-200 text-navy-600'
-                  }`}>
-                    {itemsByCategory[category].length}
-                  </span>
-                )}
-              </button>
-            ))}
+          {/* Category Tabs - Horizontal scroll on mobile, wrap on desktop */}
+          <div className="mt-4 pt-4 border-t border-primary-200">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 pb-2 sm:pb-0 scrollbar-hide">
+              <div className="flex gap-2 min-w-max sm:flex-wrap sm:min-w-0">
+                {availableCategories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => handleCategoryChange(category)}
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all whitespace-nowrap flex-shrink-0 ${
+                      selectedCategory === category
+                        ? 'bg-accent-500 text-white shadow-md'
+                        : 'bg-primary-100 text-navy-700 hover:bg-primary-200'
+                    }`}
+                  >
+                    {category}
+                    {category !== 'All' && itemsByCategory[category] && (
+                      <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                        selectedCategory === category
+                          ? 'bg-white/20 text-white'
+                          : 'bg-primary-200 text-navy-600'
+                      }`}>
+                        {itemsByCategory[category].length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         
@@ -417,20 +561,127 @@ const Items = () => {
                   const categoryItems = filteredItemsByCategory[category]
                   if (categoryItems.length === 0) return null
                   
+                  const isExpanded = getIsExpanded(category)
+                  
+                  // Group items by base name for variants
+                  // Only include first variant (I) in the main display, but group all variants together
+                  const variantGroups: Record<string, typeof categoryItems> = {}
+                  const standaloneItems: typeof categoryItems = []
+                  
+                  categoryItems.forEach(item => {
+                    const itemName = item.name || ''
+                    
+                    // Skip invalid variants (like "IIII") - don't show them at all
+                    if (hasInvalidVariant(itemName)) {
+                      // Invalid variant pattern - skip it entirely
+                      return
+                    }
+                    
+                    // Check if it has a valid variant number
+                    if (hasVariantNumber(itemName)) {
+                      // Has a valid variant - group it (even if it's III, II, etc.)
+                      const baseName = extractBaseName(itemName)
+                      if (!variantGroups[baseName]) {
+                        variantGroups[baseName] = []
+                      }
+                      variantGroups[baseName].push(item)
+                    } else {
+                      // No valid variant pattern - standalone item
+                      standaloneItems.push(item)
+                    }
+                  })
+                  
+                  // Filter variant groups to only show those with first variant (I)
+                  // Also ensure all variants are included and sorted correctly
+                  const variantGroupsToShow: Record<string, typeof categoryItems> = {}
+                  Object.keys(variantGroups).forEach(baseName => {
+                    const hasFirstVariant = variantGroups[baseName].some(item => 
+                      isFirstVariant(item.name || '')
+                    )
+                    if (hasFirstVariant) {
+                      // Sort variants within the group to ensure correct order (I, II, III, IV)
+                      variantGroups[baseName].sort((a, b) => {
+                        const aMatch = (a.name || '').match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+                        const bMatch = (b.name || '').match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+                        
+                        if (!aMatch || !bMatch) return 0
+                        
+                        const getVariantOrder = (variant: string): number => {
+                          // Normalize to uppercase for comparison
+                          const normalized = variant.toUpperCase()
+                          if (normalized === 'I') return 1
+                          if (normalized === 'II') return 2
+                          if (normalized === 'III') return 3
+                          if (normalized === 'IV') return 4
+                          if (normalized === 'V') return 5
+                          if (normalized === 'VI') return 6
+                          if (normalized === 'VII') return 7
+                          if (normalized === 'VIII') return 8
+                          if (normalized === 'IX') return 9
+                          if (normalized === 'X') return 10
+                          return parseInt(variant) || 0
+                        }
+                        
+                        return getVariantOrder(aMatch[1]) - getVariantOrder(bMatch[1])
+                      })
+                      variantGroupsToShow[baseName] = variantGroups[baseName]
+                    } else {
+                      // If no first variant (I), don't show this group on main page
+                      // The variants will be hidden from main display
+                    }
+                  })
+                  
                   return (
-                    <div key={category} className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-techno font-bold text-navy-800">
-                          {category}
-                        </h2>
-                        <span className="px-3 py-1 bg-primary-100 text-navy-600 rounded-full text-sm font-medium">
-                          {categoryItems.length}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
-                        {categoryItems.map((item) => (
-                          <ItemCard key={item.id} item={item} />
-                        ))}
+                    <div key={category} className="bg-white rounded-xl border border-primary-200 overflow-hidden shadow-sm">
+                      <button
+                        onClick={() => toggleCategory(category)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-primary-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-2xl font-techno font-bold text-navy-800">
+                            {category}
+                          </h2>
+                          <span className="px-3 py-1 bg-primary-100 text-navy-600 rounded-full text-sm font-medium">
+                            {categoryItems.length}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <ChevronUp className="w-5 h-5 text-navy-600 transition-transform" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-navy-600 transition-transform" />
+                          )}
+                        </div>
+                      </button>
+                      <div 
+                        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                          isExpanded ? 'max-h-[10000px] opacity-100' : 'max-h-0 opacity-0'
+                        }`}
+                      >
+                        <div className="p-6 pt-0">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+                            {/* Render variant groups (only if 2+ variants) */}
+                            {Object.entries(variantGroupsToShow)
+                              .filter(([, variantItems]) => variantItems.length >= 2)
+                              .map(([baseName, variantItems]) => (
+                                <VariantGroupCard
+                                  key={baseName}
+                                  items={variantItems}
+                                  baseName={baseName}
+                                />
+                              ))}
+                            {/* Render standalone items */}
+                            {standaloneItems.map((item) => (
+                              <ItemCard key={item.id} item={item} />
+                            ))}
+                            {/* Render single-item variant groups as regular cards */}
+                            {Object.entries(variantGroupsToShow)
+                              .filter(([, variantItems]) => variantItems.length === 1)
+                              .map(([, variantItems]) => (
+                                <ItemCard key={variantItems[0].id} item={variantItems[0]} />
+                              ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )
@@ -438,11 +689,102 @@ const Items = () => {
             ) : (
               // If specific category selected, show just that category
               filteredItemsByCategory[selectedCategory] && filteredItemsByCategory[selectedCategory].length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
-                  {filteredItemsByCategory[selectedCategory].map((item) => (
-                    <ItemCard key={item.id} item={item} />
-                  ))}
-                </div>
+                (() => {
+                  const categoryItems = filteredItemsByCategory[selectedCategory]
+                  
+                  // Group items by base name for variants
+                  // Only include first variant (I) in the main display, but group all variants together
+                  const variantGroups: Record<string, typeof categoryItems> = {}
+                  const standaloneItems: typeof categoryItems = []
+                  
+                  categoryItems.forEach(item => {
+                    const itemName = item.name || ''
+                    
+                    // Skip invalid variants (like "IIII") - don't show them at all
+                    if (hasInvalidVariant(itemName)) {
+                      // Invalid variant pattern - skip it entirely
+                      return
+                    }
+                    
+                    // Check if it has a valid variant number
+                    if (hasVariantNumber(itemName)) {
+                      // Has a valid variant - group it (even if it's III, II, etc.)
+                      const baseName = extractBaseName(itemName)
+                      if (!variantGroups[baseName]) {
+                        variantGroups[baseName] = []
+                      }
+                      variantGroups[baseName].push(item)
+                    } else {
+                      // No valid variant pattern - standalone item
+                      standaloneItems.push(item)
+                    }
+                  })
+                  
+                  // Filter variant groups to only show those with first variant (I)
+                  // Also ensure all variants are included and sorted correctly
+                  const variantGroupsToShow: Record<string, typeof categoryItems> = {}
+                  Object.keys(variantGroups).forEach(baseName => {
+                    const hasFirstVariant = variantGroups[baseName].some(item => 
+                      isFirstVariant(item.name || '')
+                    )
+                    if (hasFirstVariant) {
+                      // Sort variants within the group to ensure correct order (I, II, III, IV)
+                      variantGroups[baseName].sort((a, b) => {
+                        const aMatch = (a.name || '').match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+                        const bMatch = (b.name || '').match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+                        
+                        if (!aMatch || !bMatch) return 0
+                        
+                        const getVariantOrder = (variant: string): number => {
+                          // Normalize to uppercase for comparison
+                          const normalized = variant.toUpperCase()
+                          if (normalized === 'I') return 1
+                          if (normalized === 'II') return 2
+                          if (normalized === 'III') return 3
+                          if (normalized === 'IV') return 4
+                          if (normalized === 'V') return 5
+                          if (normalized === 'VI') return 6
+                          if (normalized === 'VII') return 7
+                          if (normalized === 'VIII') return 8
+                          if (normalized === 'IX') return 9
+                          if (normalized === 'X') return 10
+                          return parseInt(variant) || 0
+                        }
+                        
+                        return getVariantOrder(aMatch[1]) - getVariantOrder(bMatch[1])
+                      })
+                      variantGroupsToShow[baseName] = variantGroups[baseName]
+                    } else {
+                      // If no first variant (I), don't show this group on main page
+                      // The variants will be hidden from main display
+                    }
+                  })
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+                      {/* Render variant groups (only if 2+ variants) */}
+                      {Object.entries(variantGroupsToShow)
+                        .filter(([, variantItems]) => variantItems.length >= 2)
+                        .map(([baseName, variantItems]) => (
+                          <VariantGroupCard
+                            key={baseName}
+                            items={variantItems}
+                            baseName={baseName}
+                          />
+                        ))}
+                      {/* Render standalone items */}
+                      {standaloneItems.map((item) => (
+                        <ItemCard key={item.id} item={item} />
+                      ))}
+                      {/* Render single-item variant groups as regular cards */}
+                      {Object.entries(variantGroupsToShow)
+                        .filter(([, variantItems]) => variantItems.length === 1)
+                        .map(([, variantItems]) => (
+                          <ItemCard key={variantItems[0].id} item={variantItems[0]} />
+                        ))}
+                    </div>
+                  )
+                })()
               ) : (
                 <div className="text-center py-12">
                   <p className="text-navy-500 text-lg">No items found in {selectedCategory} matching your criteria.</p>

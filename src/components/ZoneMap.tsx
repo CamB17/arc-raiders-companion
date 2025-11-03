@@ -3,11 +3,11 @@ import { MapContainer, ImageOverlay, Marker, Popup, useMap } from 'react-leaflet
 import L, { DivIcon, LatLngBounds } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Map, MapMarker, MapZone } from '@/lib/supabase'
-import { CheckSquare, Square, ChevronDown, ChevronRight } from 'lucide-react'
+import { CheckSquare, Square, ChevronDown, ChevronRight, Menu, X } from 'lucide-react'
 
 interface ZoneMapProps {
   map: Map & { map_zones?: MapZone[]; map_markers?: MapMarker[] }
-  height?: number
+  height?: number | string
 }
 
 interface MarkerCategory {
@@ -74,13 +74,22 @@ const createCustomMarkerIcon = (
   })
 }
 
-// Component to convert percentage coordinates to lat/lng
-const PercentageToLatLng = ({ x, y, bounds }: { x: number; y: number; bounds: LatLngBounds }) => {
-  // Convert percentage (0-100) to pixel position
-  // Invert Y axis because map coordinates go from top-left, but lat increases upward
-  const lat = bounds.getNorth() - (y / 100) * (bounds.getNorth() - bounds.getSouth())
-  const lng = bounds.getWest() + (x / 100) * (bounds.getEast() - bounds.getWest())
-  return [lat, lng] as [number, number]
+// Component to handle map resize on window resize
+const MapResizeHandler = () => {
+  const mapInstance = useMap()
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setTimeout(() => {
+        mapInstance.invalidateSize()
+      }, 100)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [mapInstance])
+  
+  return null
 }
 
 const ZoneMapContent = ({ map, markers, categoryVisibility }: { 
@@ -93,15 +102,24 @@ const ZoneMapContent = ({ map, markers, categoryVisibility }: {
   
   // Load image to detect actual dimensions
   useEffect(() => {
-    if (!map.image_url) return
+    if (!map.image_url) {
+      // If no image URL but we have dimensions, use those
+      if (map.map_width && map.map_height) {
+        setImageDimensions({ width: map.map_width, height: map.map_height })
+      }
+      return
+    }
     
     const img = new Image()
+    img.crossOrigin = 'anonymous'
     img.onload = () => {
       setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight })
     }
     img.onerror = () => {
       // Fallback to database dimensions if image fails to load
-      setImageDimensions({ width: map.map_width, height: map.map_height })
+      if (map.map_width && map.map_height) {
+        setImageDimensions({ width: map.map_width, height: map.map_height })
+      }
     }
     img.src = map.image_url
   }, [map.image_url, map.map_width, map.map_height])
@@ -109,8 +127,8 @@ const ZoneMapContent = ({ map, markers, categoryVisibility }: {
   // Image overlay bounds (using CRS.Simple for image coordinates)
   // Use actual image dimensions if available, otherwise fallback to database values
   const bounds: LatLngBounds = useMemo(() => {
-    const width = imageDimensions?.width || map.map_width
-    const height = imageDimensions?.height || map.map_height
+    const width = imageDimensions?.width || map.map_width || 1000
+    const height = imageDimensions?.height || map.map_height || 1000
     return new LatLngBounds(
       [0, 0],
       [height, width]
@@ -133,8 +151,11 @@ const ZoneMapContent = ({ map, markers, categoryVisibility }: {
         const paddingX = container.clientWidth * paddingPercent
         const paddingY = container.clientHeight * paddingPercent
         
+        // Use minimum padding for equal padding on all sides
+        const padding = Math.min(paddingX, paddingY)
+        
         mapInstance.fitBounds(bounds, { 
-          padding: [paddingY, paddingX, paddingY, paddingX],
+          padding: [padding, padding],
           maxZoom: 18,
           animate: false
         })
@@ -146,8 +167,8 @@ const ZoneMapContent = ({ map, markers, categoryVisibility }: {
 
   // Convert percentage to pixel coordinates, then to lat/lng
   const percentageToLatLng = (x: number, y: number): [number, number] => {
-    const width = imageDimensions?.width || map.map_width
-    const height = imageDimensions?.height || map.map_height
+    const width = imageDimensions?.width || map.map_width || 1000
+    const height = imageDimensions?.height || map.map_height || 1000
     const pixelX = (x / 100) * width
     const pixelY = (y / 100) * height
     // Invert Y axis
@@ -158,11 +179,19 @@ const ZoneMapContent = ({ map, markers, categoryVisibility }: {
 
   // Don't render until we have image dimensions
   if (!imageDimensions) {
-    return null
+    return (
+      <div className="flex items-center justify-center h-full w-full bg-gray-100">
+        <div className="text-center">
+          <p className="text-gray-500 mb-2">Loading map...</p>
+          <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <>
+      <MapResizeHandler />
       <ImageOverlay
         url={map.image_url || '/placeholder-map.png'}
         bounds={bounds}
@@ -201,16 +230,30 @@ const ZoneMapContent = ({ map, markers, categoryVisibility }: {
   )
 }
 
-const ZoneMap = ({ map, height = 800 }: ZoneMapProps) => {
+const ZoneMap = ({ map, height = '70vh' }: ZoneMapProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     container: true,
     arc: true,
     location: true,
   })
   const [categoryVisibility, setCategoryVisibility] = useState<Record<string, boolean>>({})
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
+  
+  // Convert height prop to CSS value
+  const mapHeight = typeof height === 'number' ? `${height}px` : height
+
+  // Track window size for responsive sidebar height
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024)
+    }
+    checkIsDesktop()
+    window.addEventListener('resize', checkIsDesktop)
+    return () => window.removeEventListener('resize', checkIsDesktop)
+  }, [])
 
   const markers = map.map_markers || []
-  const zones = map.map_zones || []
 
   // Group markers by type and category
   const markerCategories = useMemo(() => {
@@ -314,21 +357,37 @@ const ZoneMap = ({ map, height = 800 }: ZoneMapProps) => {
   }
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex flex-col lg:flex-row gap-4" style={{ height: mapHeight }}>
+      {/* Mobile Sidebar Toggle Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="lg:hidden flex items-center justify-between w-full bg-gray-900 text-white rounded-lg p-3 hover:bg-gray-800 transition-colors"
+      >
+        <span className="font-semibold">{map.name}</span>
+        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
       {/* Sidebar Filters */}
-      <div className="w-56 bg-gray-900 text-white rounded-lg p-4 overflow-y-auto flex-shrink-0" style={{ height: `${height}px` }}>
+      <div 
+        className={`
+          ${sidebarOpen ? 'block' : 'hidden'} lg:block
+          w-full lg:w-64 xl:w-72
+          bg-gray-900 text-white rounded-lg p-4 overflow-y-auto flex-shrink-0
+        `}
+        style={{ height: isDesktop ? mapHeight : 'auto', maxHeight: isDesktop ? 'none' : '50vh' }}
+      >
         <div className="mb-4">
-          <h2 className="text-xl font-bold mb-2">{map.name}</h2>
-          <div className="flex gap-2 mb-4">
+          <h2 className="text-lg lg:text-xl font-bold mb-2">{map.name}</h2>
+          <div className="flex flex-wrap gap-2 mb-4">
             <button
               onClick={showAll}
-              className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
+              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-sm transition-colors"
             >
               Show All
             </button>
             <button
               onClick={hideAll}
-              className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
+              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
             >
               Hide All
             </button>
@@ -353,17 +412,17 @@ const ZoneMap = ({ map, height = 800 }: ZoneMapProps) => {
                     toggleMarkerType(markerType, true)
                   }
                 }}
-                className="w-full flex items-center justify-between p-2 bg-gray-800 hover:bg-gray-700 rounded mb-2"
+                className="w-full flex items-center justify-between p-2 bg-gray-800 hover:bg-gray-700 rounded mb-2 transition-colors"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   {allVisible ? (
-                    <CheckSquare className="w-4 h-4" />
+                    <CheckSquare className="w-4 h-4 flex-shrink-0" />
                   ) : (
-                    <Square className="w-4 h-4" />
+                    <Square className="w-4 h-4 flex-shrink-0" />
                   )}
-                  <span className="font-semibold capitalize">{markerType}</span>
+                  <span className="font-semibold capitalize truncate">{markerType}</span>
                 </div>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-gray-400 ml-2 flex-shrink-0">
                   {count.visible}/{count.total}
                 </span>
               </button>
@@ -373,12 +432,12 @@ const ZoneMap = ({ map, height = 800 }: ZoneMapProps) => {
                   ...prev,
                   [markerType]: !isExpanded
                 }))}
-                className="w-full flex items-center gap-2 p-2 text-sm text-gray-400 hover:text-white mb-1"
+                className="w-full flex items-center gap-2 p-2 text-sm text-gray-400 hover:text-white mb-1 transition-colors"
               >
                 {isExpanded ? (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-4 h-4 flex-shrink-0" />
                 ) : (
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4 flex-shrink-0" />
                 )}
                 <span>Categories</span>
               </button>
@@ -392,16 +451,16 @@ const ZoneMap = ({ map, height = 800 }: ZoneMapProps) => {
                     return (
                       <label
                         key={key}
-                        className="flex items-center gap-2 p-2 hover:bg-gray-800 rounded cursor-pointer"
+                        className="flex items-center gap-2 p-2 hover:bg-gray-800 rounded cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
                           checked={isVisible}
                           onChange={() => toggleCategory(cat.markerType, cat.category)}
-                          className="rounded"
+                          className="rounded flex-shrink-0"
                         />
-                        <span className="text-sm flex-1">{cat.name}</span>
-                        <span className="text-xs text-gray-500">({cat.count})</span>
+                        <span className="text-sm flex-1 truncate">{cat.name}</span>
+                        <span className="text-xs text-gray-500 flex-shrink-0">({cat.count})</span>
                       </label>
                     )
                   })}
@@ -413,7 +472,10 @@ const ZoneMap = ({ map, height = 800 }: ZoneMapProps) => {
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 rounded-lg overflow-hidden border-2 border-gray-800" style={{ height: `${height}px` }}>
+      <div 
+        className="flex-1 rounded-lg overflow-hidden border-2 border-gray-800"
+        style={{ height: mapHeight, minHeight: '400px' }}
+      >
         {map.image_url ? (
           <MapContainer
             center={[map.map_height / 2, map.map_width / 2]}
@@ -422,6 +484,9 @@ const ZoneMap = ({ map, height = 800 }: ZoneMapProps) => {
             crs={L.CRS.Simple as any}
             style={{ height: '100%', width: '100%' }}
             zoomControl={true}
+            scrollWheelZoom={true}
+            touchZoom={true}
+            doubleClickZoom={true}
           >
             <ZoneMapContent
               map={map}
