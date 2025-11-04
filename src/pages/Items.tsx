@@ -282,7 +282,7 @@ const Items = () => {
     if (items.length === 0) return ['all']
     return ['all', ...new Set(items.map(item => item.rarity).filter(Boolean))]
   }, [items])
-
+  
   // Group items by category and sort by rarity
   const itemsByCategory = useMemo(() => {
     const grouped: Record<string, typeof items> = {}
@@ -637,14 +637,14 @@ const Items = () => {
                         onClick={() => toggleCategory(category)}
                         className="w-full flex items-center justify-between p-4 hover:bg-primary-50 transition-colors"
                       >
-                        <div className="flex items-center gap-3">
-                          <h2 className="text-2xl font-techno font-bold text-navy-800">
-                            {category}
-                          </h2>
-                          <span className="px-3 py-1 bg-primary-100 text-navy-600 rounded-full text-sm font-medium">
-                            {categoryItems.length}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-2xl font-techno font-bold text-navy-800">
+                          {category}
+                        </h2>
+                        <span className="px-3 py-1 bg-primary-100 text-navy-600 rounded-full text-sm font-medium">
+                          {categoryItems.length}
+                        </span>
+                      </div>
                         <div className="flex items-center gap-2">
                           {isExpanded ? (
                             <ChevronUp className="w-5 h-5 text-navy-600 transition-transform" />
@@ -659,7 +659,7 @@ const Items = () => {
                         }`}
                       >
                         <div className="p-6 pt-0">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
                             {/* Render variant groups (only if 2+ variants) */}
                             {Object.entries(variantGroupsToShow)
                               .filter(([, variantItems]) => variantItems.length >= 2)
@@ -672,8 +672,8 @@ const Items = () => {
                               ))}
                             {/* Render standalone items */}
                             {standaloneItems.map((item) => (
-                              <ItemCard key={item.id} item={item} />
-                            ))}
+                          <ItemCard key={item.id} item={item} />
+                        ))}
                             {/* Render single-item variant groups as regular cards */}
                             {Object.entries(variantGroupsToShow)
                               .filter(([, variantItems]) => variantItems.length === 1)
@@ -761,7 +761,7 @@ const Items = () => {
                   })
                   
                   return (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
                       {/* Render variant groups (only if 2+ variants) */}
                       {Object.entries(variantGroupsToShow)
                         .filter(([, variantItems]) => variantItems.length >= 2)
@@ -774,15 +774,15 @@ const Items = () => {
                         ))}
                       {/* Render standalone items */}
                       {standaloneItems.map((item) => (
-                        <ItemCard key={item.id} item={item} />
+                    <ItemCard key={item.id} item={item} />
                       ))}
                       {/* Render single-item variant groups as regular cards */}
                       {Object.entries(variantGroupsToShow)
                         .filter(([, variantItems]) => variantItems.length === 1)
                         .map(([, variantItems]) => (
                           <ItemCard key={variantItems[0].id} item={variantItems[0]} />
-                        ))}
-                    </div>
+                  ))}
+                </div>
                   )
                 })()
               ) : (

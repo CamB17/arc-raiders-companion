@@ -246,61 +246,61 @@ const ItemCard = ({ item }: ItemCardProps) => {
               )
             } else {
               // Non-weapon stats (keep original format)
-              return (
-                <>
-                  {hasValue(stackSize) && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Stack Size</span>
-                      <span className="text-navy-800 font-semibold">{typeof stackSize === 'number' ? stackSize : parseFloat(stackSize) || stackSize}</span>
-                    </div>
-                  )}
-                  
-                  {hasValue(stats.healingPerSecond) && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Healing/Second</span>
-                      <span className="text-navy-800 font-semibold">
-                        {typeof stats.healingPerSecond === 'number' 
-                          ? stats.healingPerSecond 
-                          : parseFloat(stats.healingPerSecond) || stats.healingPerSecond}
-                        hp/s
-                      </span>
-                    </div>
-                  )}
-                  
-                  {hasValue(stats.staminaPerSecond) && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Stamina/Second</span>
-                      <span className="text-navy-800 font-semibold">
-                        {typeof stats.staminaPerSecond === 'number' 
-                          ? stats.staminaPerSecond 
-                          : parseFloat(stats.staminaPerSecond) || stats.staminaPerSecond}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {hasValue(stats.useTime) && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Use Time</span>
-                      <span className="text-navy-800 font-semibold">
-                        {typeof stats.useTime === 'number' 
-                          ? stats.useTime 
-                          : parseFloat(stats.useTime) || stats.useTime}
-                        s
-                      </span>
-                    </div>
-                  )}
-                  
-                  {hasValue(stats.duration) && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-navy-600">Duration</span>
-                      <span className="text-navy-800 font-semibold">
-                        {typeof stats.duration === 'number' 
-                          ? stats.duration 
-                          : parseFloat(stats.duration) || stats.duration}
-                        s
-                      </span>
-                    </div>
-                  )}
+            return (
+              <>
+                {hasValue(stackSize) && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-navy-600">Stack Size</span>
+                    <span className="text-navy-800 font-semibold">{typeof stackSize === 'number' ? stackSize : parseFloat(stackSize) || stackSize}</span>
+                  </div>
+                )}
+                
+                {hasValue(stats.healingPerSecond) && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-navy-600">Healing/Second</span>
+                    <span className="text-navy-800 font-semibold">
+                      {typeof stats.healingPerSecond === 'number' 
+                        ? stats.healingPerSecond 
+                        : parseFloat(stats.healingPerSecond) || stats.healingPerSecond}
+                      hp/s
+                    </span>
+                  </div>
+                )}
+                
+                {hasValue(stats.staminaPerSecond) && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-navy-600">Stamina/Second</span>
+                    <span className="text-navy-800 font-semibold">
+                      {typeof stats.staminaPerSecond === 'number' 
+                        ? stats.staminaPerSecond 
+                        : parseFloat(stats.staminaPerSecond) || stats.staminaPerSecond}
+                    </span>
+                  </div>
+                )}
+                
+                {hasValue(stats.useTime) && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-navy-600">Use Time</span>
+                    <span className="text-navy-800 font-semibold">
+                      {typeof stats.useTime === 'number' 
+                        ? stats.useTime 
+                        : parseFloat(stats.useTime) || stats.useTime}
+                      s
+                    </span>
+                  </div>
+                )}
+                
+                {hasValue(stats.duration) && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-navy-600">Duration</span>
+                    <span className="text-navy-800 font-semibold">
+                      {typeof stats.duration === 'number' 
+                        ? stats.duration 
+                        : parseFloat(stats.duration) || stats.duration}
+                      s
+                    </span>
+                  </div>
+                )}
                 </>
               )
             }
