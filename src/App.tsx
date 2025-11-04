@@ -17,6 +17,8 @@ import MapDetail from './pages/MapDetail'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import CustomItemsAdmin from './pages/admin/CustomItemsAdmin'
 import CustomItemForm from './pages/admin/CustomItemForm'
+import ItemsAdmin from './pages/admin/ItemsAdmin'
+import ItemEditForm from './pages/admin/ItemEditForm'
 import EventsAdmin from './pages/admin/EventsAdmin'
 import MapsAdmin from './pages/admin/MapsAdmin'
 import MapForm from './pages/admin/MapForm'
@@ -44,6 +46,8 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/items" element={<CustomItemsAdmin />} />
         <Route path="/admin/items/:id" element={<CustomItemForm />} />
+        <Route path="/admin/data/items" element={<ItemsAdmin />} />
+        <Route path="/admin/data/items/:id" element={<ItemEditForm />} />
         <Route path="/admin/events" element={<EventsAdmin />} />
         <Route path="/admin/maps" element={<MapsAdmin />} />
         <Route path="/admin/maps/new" element={<MapForm />} />

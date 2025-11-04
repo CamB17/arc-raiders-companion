@@ -294,6 +294,47 @@ VITE_SUPABASE_ANON_KEY=your_anon_key`}
           <SupabaseDiagnostic />
         </div>
 
+        {/* Data Management Section */}
+        <Card className="mt-6 border-2 border-accent-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="w-6 h-6 text-accent-600" />
+              Edit Metaforge Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-navy-600 mb-4">
+              Update Metaforge data directly in your database. Manual edits are preserved during sync.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <Link to="/admin/data/items">
+                <Button variant="primary" className="w-full">
+                  <Package className="w-4 h-4 mr-2" />
+                  Edit Items
+                </Button>
+              </Link>
+              <Link to="/admin/data/quests">
+                <Button variant="primary" className="w-full">
+                  <Target className="w-4 h-4 mr-2" />
+                  Edit Quests
+                </Button>
+              </Link>
+              <Link to="/admin/data/traders">
+                <Button variant="primary" className="w-full">
+                  <Users className="w-4 h-4 mr-2" />
+                  Edit Traders
+                </Button>
+              </Link>
+              <Link to="/admin/data/arcs">
+                <Button variant="primary" className="w-full">
+                  <Target className="w-4 h-4 mr-2" />
+                  Edit Arcs
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Quick Actions */}
         <Card className="mt-6">
           <CardHeader>

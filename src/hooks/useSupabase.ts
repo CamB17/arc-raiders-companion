@@ -412,3 +412,292 @@ export const useCreateMapMarker = () => useSupabaseCreate<MapMarker>('map_marker
 export const useUpdateMapMarker = () => useSupabaseUpdate<MapMarker>('map_markers')
 export const useDeleteMapMarker = () => useSupabaseDelete('map_markers')
 
+// Main Data Tables (Items, Quests, Traders, Arcs from Metaforge sync)
+// These hooks allow editing the actual Metaforge data stored in Supabase
+
+// Items (from Metaforge) - Note: useItems exists in useArcRaidersApi, so using useSupabaseItems
+export const useSupabaseItems = (params?: { search?: string; item_type?: string; rarity?: string }) => {
+  return useQuery({
+    queryKey: ['supabase', 'items', params],
+    queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        return []
+      }
+
+      let query = supabase.from('items').select('*')
+
+      if (params?.search) {
+        query = query.ilike('name', `%${params.search}%`)
+      }
+      if (params?.item_type) {
+        query = query.eq('item_type', params.item_type)
+      }
+      if (params?.rarity) {
+        query = query.eq('rarity', params.rarity)
+      }
+
+      query = query.order('name', { ascending: true })
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Error fetching items:', error)
+        return []
+      }
+
+      return data || []
+    },
+    enabled: isSupabaseConfigured(),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export const useSupabaseItem = (id?: string) => useSupabaseRecord('items', id)
+export const useUpdateSupabaseItem = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase not configured')
+      }
+
+      const { data, error } = await supabase
+        .from('items')
+        .update({
+          ...updates,
+          manually_updated: true,
+          manually_updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating item:', error)
+        throw error
+      }
+
+      return data
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'items'] })
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'items', variables.id] })
+    },
+  })
+}
+
+// Quests (from Metaforge)
+export const useSupabaseQuests = (params?: { search?: string; type?: string; difficulty?: string }) => {
+  return useQuery({
+    queryKey: ['supabase', 'quests', params],
+    queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        return []
+      }
+
+      let query = supabase.from('quests').select('*')
+
+      if (params?.search) {
+        query = query.ilike('name', `%${params.search}%`)
+      }
+      if (params?.type) {
+        query = query.eq('type', params.type)
+      }
+      if (params?.difficulty) {
+        query = query.eq('difficulty', params.difficulty)
+      }
+
+      query = query.order('name', { ascending: true })
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Error fetching quests:', error)
+        return []
+      }
+
+      return data || []
+    },
+    enabled: isSupabaseConfigured(),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export const useSupabaseQuest = (id?: string) => useSupabaseRecord('quests', id)
+export const useUpdateSupabaseQuest = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase not configured')
+      }
+
+      const { data, error } = await supabase
+        .from('quests')
+        .update({
+          ...updates,
+          manually_updated: true,
+          manually_updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating quest:', error)
+        throw error
+      }
+
+      return data
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'quests'] })
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'quests', variables.id] })
+    },
+  })
+}
+
+// Traders (from Metaforge)
+export const useSupabaseTraders = (params?: { search?: string }) => {
+  return useQuery({
+    queryKey: ['supabase', 'traders', params],
+    queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        return []
+      }
+
+      let query = supabase.from('traders').select('*')
+
+      if (params?.search) {
+        query = query.ilike('name', `%${params.search}%`)
+      }
+
+      query = query.order('name', { ascending: true })
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Error fetching traders:', error)
+        return []
+      }
+
+      return data || []
+    },
+    enabled: isSupabaseConfigured(),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export const useSupabaseTrader = (id?: string) => useSupabaseRecord('traders', id)
+export const useUpdateSupabaseTrader = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase not configured')
+      }
+
+      const { data, error } = await supabase
+        .from('traders')
+        .update({
+          ...updates,
+          manually_updated: true,
+          manually_updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating trader:', error)
+        throw error
+      }
+
+      return data
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'traders'] })
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'traders', variables.id] })
+    },
+  })
+}
+
+// Arcs/Enemies (from Metaforge)
+export const useSupabaseArcs = (params?: { search?: string; type?: string; difficulty?: string }) => {
+  return useQuery({
+    queryKey: ['supabase', 'arcs', params],
+    queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        return []
+      }
+
+      let query = supabase.from('arcs').select('*')
+
+      if (params?.search) {
+        query = query.ilike('name', `%${params.search}%`)
+      }
+      if (params?.type) {
+        query = query.eq('type', params.type)
+      }
+      if (params?.difficulty) {
+        query = query.eq('difficulty', params.difficulty)
+      }
+
+      query = query.order('name', { ascending: true })
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Error fetching arcs:', error)
+        return []
+      }
+
+      return data || []
+    },
+    enabled: isSupabaseConfigured(),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export const useSupabaseArc = (id?: string) => useSupabaseRecord('arcs', id)
+export const useUpdateSupabaseArc = () => {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Supabase not configured')
+      }
+
+      const { data, error } = await supabase
+        .from('arcs')
+        .update({
+          ...updates,
+          manually_updated: true,
+          manually_updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating arc:', error)
+        throw error
+      }
+
+      return data
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'arcs'] })
+      queryClient.invalidateQueries({ queryKey: ['supabase', 'arcs', variables.id] })
+    },
+  })
+}
+
