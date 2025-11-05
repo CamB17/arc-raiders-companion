@@ -23,6 +23,7 @@ import {
   useCustomLocations,
   useCustomGuides,
   useCustomBuilds,
+  useHideoutWorkbenches,
 } from '@/hooks/useSupabase'
 import { useAllEvents } from '@/hooks/useEvents'
 
@@ -38,6 +39,7 @@ const AdminDashboard = () => {
   const { data: customBuilds } = useCustomBuilds()
   const { data: events } = useAllEvents()
   const { data: maps } = useMaps()
+  const { data: hideoutWorkbenches } = useHideoutWorkbenches()
 
   const adminSections = [
     {
@@ -111,6 +113,15 @@ const AdminDashboard = () => {
       count: maps?.length || 0,
       color: 'text-teal-600',
       bgColor: 'bg-teal-50',
+    },
+    {
+      title: 'Hideout Workbenches',
+      description: 'Manage hideout workbench levels and requirements',
+      icon: Wrench,
+      path: '/admin/hideout-workbenches',
+      count: hideoutWorkbenches?.length || 0,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50',
     },
   ]
 

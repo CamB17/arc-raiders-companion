@@ -10,6 +10,8 @@ import type {
   Map,
   MapZone,
   MapMarker,
+  HideoutWorkbench,
+  HideoutWorkbenchLevel,
 } from '@/lib/supabase'
 
 // Generic CRUD hooks for any table
@@ -411,4 +413,123 @@ export const useMapMarker = (id?: string) => useSupabaseRecord<MapMarker>('map_m
 export const useCreateMapMarker = () => useSupabaseCreate<MapMarker>('map_markers')
 export const useUpdateMapMarker = () => useSupabaseUpdate<MapMarker>('map_markers')
 export const useDeleteMapMarker = () => useSupabaseDelete('map_markers')
+
+// Hideout Workbenches
+export const useHideoutWorkbenches = () => {
+  return useQuery<HideoutWorkbench[]>({
+    queryKey: ['supabase', 'hideout_workbenches'],
+    queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured. Skipping fetch for hideout_workbenches')
+        return []
+      }
+
+      const { data, error } = await supabase
+        .from('hideout_workbenches')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching hideout_workbenches:', error)
+        throw error
+      }
+
+      return data || []
+    },
+    enabled: isSupabaseConfigured(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export const useHideoutWorkbench = (id?: string) => useSupabaseRecord<HideoutWorkbench>('hideout_workbenches', id)
+export const useCreateHideoutWorkbench = () => useSupabaseCreate<HideoutWorkbench>('hideout_workbenches')
+export const useUpdateHideoutWorkbench = () => useSupabaseUpdate<HideoutWorkbench>('hideout_workbenches')
+export const useDeleteHideoutWorkbench = () => useSupabaseDelete('hideout_workbenches')
+
+// Hideout Workbench Levels
+export const useHideoutWorkbenchLevels = (workbenchId?: string) => {
+  return useQuery<HideoutWorkbenchLevel[]>({
+    queryKey: ['supabase', 'hideout_workbench_levels', workbenchId],
+    queryFn: async () => {
+      if (!isSupabaseConfigured() || !workbenchId) {
+        return []
+      }
+
+      const { data, error } = await supabase
+        .from('hideout_workbench_levels')
+        .select('*')
+        .eq('workbench_id', workbenchId)
+        .order('level_number', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching hideout_workbench_levels:', error)
+        throw error
+      }
+
+      return data || []
+    },
+    enabled: !!workbenchId && isSupabaseConfigured(),
+  })
+}
+
+// Get all workbenches with their levels
+export const useHideoutWorkbenchesWithLevels = () => {
+  return useQuery<(HideoutWorkbench & { levels: HideoutWorkbenchLevel[] })[]>({
+    queryKey: ['supabase', 'hideout_workbenches', 'with_levels'],
+    queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        return []
+      }
+
+      const { data: workbenches, error: workbenchesError } = await supabase
+        .from('hideout_workbenches')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('name', { ascending: true })
+
+      if (workbenchesError) {
+        console.error('Error fetching hideout_workbenches:', workbenchesError)
+        throw workbenchesError
+      }
+
+      if (!workbenches || workbenches.length === 0) {
+        return []
+      }
+
+      const { data: levels, error: levelsError } = await supabase
+        .from('hideout_workbench_levels')
+        .select('*')
+        .in('workbench_id', workbenches.map(w => w.id))
+        .order('level_number', { ascending: true })
+
+      if (levelsError) {
+        console.error('Error fetching hideout_workbench_levels:', levelsError)
+        throw levelsError
+      }
+
+      // Group levels by workbench_id
+      const levelsByWorkbench = (levels || []).reduce((acc, level) => {
+        if (!acc[level.workbench_id]) {
+          acc[level.workbench_id] = []
+        }
+        acc[level.workbench_id].push(level)
+        return acc
+      }, {} as Record<string, HideoutWorkbenchLevel[]>)
+
+      // Combine workbenches with their levels
+      return workbenches.map(workbench => ({
+        ...workbench,
+        levels: levelsByWorkbench[workbench.id] || [],
+      }))
+    },
+    enabled: isSupabaseConfigured(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export const useHideoutWorkbenchLevel = (id?: string) => useSupabaseRecord<HideoutWorkbenchLevel>('hideout_workbench_levels', id)
+export const useCreateHideoutWorkbenchLevel = () => useSupabaseCreate<HideoutWorkbenchLevel>('hideout_workbench_levels')
+export const useUpdateHideoutWorkbenchLevel = () => useSupabaseUpdate<HideoutWorkbenchLevel>('hideout_workbench_levels')
+export const useDeleteHideoutWorkbenchLevel = () => useSupabaseDelete('hideout_workbench_levels')
 
