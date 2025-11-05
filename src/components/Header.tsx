@@ -32,6 +32,12 @@ const Header = () => {
       items: [
         { name: 'Maps', path: '/maps' },
       ]
+    },
+    {
+      title: 'Tracking',
+      items: [
+        { name: 'Hideout Tracker', path: '/tracking/hideout' },
+      ]
     }
   ]
   

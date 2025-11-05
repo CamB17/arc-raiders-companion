@@ -63,6 +63,16 @@ export interface Database {
         Insert: Omit<MapMarker, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<MapMarker, 'id' | 'created_at' | 'updated_at'>>
       }
+      hideout_workbenches: {
+        Row: HideoutWorkbench
+        Insert: Omit<HideoutWorkbench, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<HideoutWorkbench, 'id' | 'created_at' | 'updated_at'>>
+      }
+      hideout_workbench_levels: {
+        Row: HideoutWorkbenchLevel
+        Insert: Omit<HideoutWorkbenchLevel, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<HideoutWorkbenchLevel, 'id' | 'created_at' | 'updated_at'>>
+      }
     }
   }
 }
@@ -238,6 +248,34 @@ export interface MapMarker {
   zone_id?: string
   is_visible?: boolean
   metadata?: Record<string, any>
+  created_at?: string
+  updated_at?: string
+}
+
+// Hideout Workbench - for tracking hideout progress
+export interface HideoutWorkbench {
+  id: string
+  name: string // e.g., 'Scrappy', 'Gunsmith', 'Gear Bench'
+  image_url?: string
+  max_level: number
+  display_order: number
+  description?: string
+  created_at?: string
+  updated_at?: string
+}
+
+// Hideout Workbench Level - stores requirements and unlocks for each level
+export interface HideoutWorkbenchLevel {
+  id: string
+  workbench_id: string
+  level_number: number // 1, 2, 3, etc.
+  requirements: Array<{
+    item_id: string // Reference to API item ID
+    quantity: number
+  }>
+  unlocks: Array<{
+    item_id: string // Reference to API item ID
+  }>
   created_at?: string
   updated_at?: string
 }
