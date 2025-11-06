@@ -9,7 +9,8 @@ import {
   Database,
   Plus,
   BarChart3,
-  Calendar 
+  Calendar,
+  Rocket
 } from 'lucide-react'
 import { useMaps } from '@/hooks/useSupabase'
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/Card'
@@ -24,6 +25,7 @@ import {
   useCustomGuides,
   useCustomBuilds,
   useHideoutWorkbenches,
+  useExpedition,
 } from '@/hooks/useSupabase'
 import { useAllEvents } from '@/hooks/useEvents'
 
@@ -40,6 +42,7 @@ const AdminDashboard = () => {
   const { data: events } = useAllEvents()
   const { data: maps } = useMaps()
   const { data: hideoutWorkbenches } = useHideoutWorkbenches()
+  const { data: expedition } = useExpedition()
 
   const adminSections = [
     {
@@ -122,6 +125,15 @@ const AdminDashboard = () => {
       count: hideoutWorkbenches?.length || 0,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
+    },
+    {
+      title: 'Expedition',
+      description: 'Manage expedition phases and requirements',
+      icon: Rocket,
+      path: '/admin/expedition',
+      count: expedition ? 1 : 0,
+      color: 'text-cyan-600',
+      bgColor: 'bg-cyan-50',
     },
   ]
 

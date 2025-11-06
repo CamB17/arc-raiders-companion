@@ -21,41 +21,86 @@ const getRarityStyles = (rarity?: string): { backgroundColor: string; color: str
   return styles[rarityLower] || { backgroundColor: '#3D3D3D', color: '#ffffff' }
 }
 
+// Convert Arabic numeral to Roman numeral for display
+const arabicToRoman = (num: number): string => {
+  if (num <= 0 || num > 10) return num.toString()
+  const romanMap: Record<number, string> = {
+    1: 'I',
+    2: 'II',
+    3: 'III',
+    4: 'IV',
+    5: 'V',
+    6: 'VI',
+    7: 'VII',
+    8: 'VIII',
+    9: 'IX',
+    10: 'X'
+  }
+  return romanMap[num] || num.toString()
+}
+
 // Extract variant number from name (I, II, III, IV, or 1, 2, 3, 4)
-const extractVariantInfo = (name: string): { baseName: string; variantNumber: string | null; sortOrder: number } => {
+const extractVariantInfo = (name: string): { baseName: string; variantNumber: string | null; displayVariant: string | null; sortOrder: number } => {
+  if (!name) return { baseName: name, variantNumber: null, displayVariant: null, sortOrder: 0 }
+  
   // Match Roman numerals (IV, IX, I, II, III, V, VI, VII, VIII, X) or Arabic numerals at the end
   // Match IV and IX before matching I, II, III to avoid partial matches
-  // Use case-insensitive matching
-  const romanMatch = name.match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+  // Handle both space and hyphen separators, use case-insensitive matching
+  // Also handle cases where there's no separator (e.g., "HullcrackerIV")
+  const romanMatch = name.match(/(?:[\s-]+|^)(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
   
   if (romanMatch) {
     const variantNumber = romanMatch[1]
     // Remove the matched variant number from the name (case-insensitive)
-    const baseName = name.replace(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i, '').trim()
+    // Handle both with and without separators
+    const baseName = name.replace(/(?:[\s-]+|^)(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i, '').trim()
     
     // Convert to sort order (I=1, II=2, III=3, IV=4, etc.)
     // Normalize to uppercase for comparison
     const normalizedVariant = variantNumber.toUpperCase()
     let sortOrder = 0
-    if (normalizedVariant === 'I') sortOrder = 1
-    else if (normalizedVariant === 'II') sortOrder = 2
-    else if (normalizedVariant === 'III') sortOrder = 3
-    else if (normalizedVariant === 'IV') sortOrder = 4
-    else if (normalizedVariant === 'V') sortOrder = 5
-    else if (normalizedVariant === 'VI') sortOrder = 6
-    else if (normalizedVariant === 'VII') sortOrder = 7
-    else if (normalizedVariant === 'VIII') sortOrder = 8
-    else if (normalizedVariant === 'IX') sortOrder = 9
-    else if (normalizedVariant === 'X') sortOrder = 10
-    else {
-      // Arabic numeral
+    let displayVariant: string | null = null
+    
+    if (normalizedVariant === 'I') {
+      sortOrder = 1
+      displayVariant = 'I'
+    } else if (normalizedVariant === 'II') {
+      sortOrder = 2
+      displayVariant = 'II'
+    } else if (normalizedVariant === 'III') {
+      sortOrder = 3
+      displayVariant = 'III'
+    } else if (normalizedVariant === 'IV') {
+      sortOrder = 4
+      displayVariant = 'IV'
+    } else if (normalizedVariant === 'V') {
+      sortOrder = 5
+      displayVariant = 'V'
+    } else if (normalizedVariant === 'VI') {
+      sortOrder = 6
+      displayVariant = 'VI'
+    } else if (normalizedVariant === 'VII') {
+      sortOrder = 7
+      displayVariant = 'VII'
+    } else if (normalizedVariant === 'VIII') {
+      sortOrder = 8
+      displayVariant = 'VIII'
+    } else if (normalizedVariant === 'IX') {
+      sortOrder = 9
+      displayVariant = 'IX'
+    } else if (normalizedVariant === 'X') {
+      sortOrder = 10
+      displayVariant = 'X'
+    } else {
+      // Arabic numeral - convert to Roman for display
       sortOrder = parseInt(variantNumber) || 0
+      displayVariant = arabicToRoman(sortOrder)
     }
     
-    return { baseName, variantNumber, sortOrder }
+    return { baseName, variantNumber, displayVariant, sortOrder }
   }
   
-  return { baseName: name, variantNumber: null, sortOrder: 0 }
+  return { baseName: name, variantNumber: null, displayVariant: null, sortOrder: 0 }
 }
 
 const VariantGroupCard = ({ items, baseName }: VariantGroupCardProps) => {
@@ -179,6 +224,27 @@ const VariantGroupCard = ({ items, baseName }: VariantGroupCardProps) => {
             const isSelected = index === selectedVariantIndex
             const variantRarity = item.rarity
             
+            // Debug logging for hullcracker items
+            if ((item.name || '').toLowerCase().includes('hullcracker')) {
+              console.log('VariantGroupCard - variant info:', {
+                itemName: item.name,
+                variantInfo,
+                index,
+                displayText: variantInfo.displayVariant || variantInfo.variantNumber || `#${index + 1}`
+              })
+            }
+            
+            // Determine what to display
+            let displayText = variantInfo.displayVariant || variantInfo.variantNumber
+            if (!displayText && variantInfo.sortOrder > 0) {
+              // If we have a sort order but no display variant, convert it
+              displayText = arabicToRoman(variantInfo.sortOrder)
+            }
+            if (!displayText) {
+              // Final fallback to index-based display
+              displayText = `#${index + 1}`
+            }
+            
             return (
               <button
                 key={item.id || index}
@@ -194,7 +260,7 @@ const VariantGroupCard = ({ items, baseName }: VariantGroupCardProps) => {
                 }`}
               >
                 <div className="flex items-center gap-1">
-                  <span>{variantInfo.variantNumber || `#${index + 1}`}</span>
+                  <span>{displayText}</span>
                   {variantRarity && (
                     <span
                       className="w-2 h-2 rounded-full"

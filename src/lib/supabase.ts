@@ -73,6 +73,16 @@ export interface Database {
         Insert: Omit<HideoutWorkbenchLevel, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<HideoutWorkbenchLevel, 'id' | 'created_at' | 'updated_at'>>
       }
+      expedition: {
+        Row: Expedition
+        Insert: Omit<Expedition, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Expedition, 'id' | 'created_at' | 'updated_at'>>
+      }
+      expedition_phases: {
+        Row: ExpeditionPhase
+        Insert: Omit<ExpeditionPhase, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<ExpeditionPhase, 'id' | 'created_at' | 'updated_at'>>
+      }
     }
   }
 }
@@ -276,6 +286,31 @@ export interface HideoutWorkbenchLevel {
   unlocks: Array<{
     item_id: string // Reference to API item ID
   }>
+  created_at?: string
+  updated_at?: string
+}
+
+// Expedition - for tracking expedition progress (single expedition)
+export interface Expedition {
+  id: string
+  name: string // e.g., 'Expedition Alpha'
+  image_url?: string
+  description?: string
+  created_at?: string
+  updated_at?: string
+}
+
+// Expedition Phase - stores requirements (items and quantities) for each phase
+export interface ExpeditionPhase {
+  id: string
+  expedition_id: string
+  phase_number: number // 1, 2, 3, etc.
+  phase_name?: string // Optional phase name
+  requirements: Array<{
+    item_id: string // Reference to API item ID
+    quantity: number
+  }>
+  display_order: number
   created_at?: string
   updated_at?: string
 }

@@ -5,9 +5,9 @@
  */
 
 import { useMemo } from 'react'
-import { useCustomItemByItemId, useCustomQuestByQuestId } from './useSupabase'
-import type { ArcRaidersItem, ArcRaidersQuest } from './useArcRaidersApi'
-import type { CustomItem, CustomQuest } from '@/lib/supabase'
+import { useCustomItemByItemId, useCustomQuestByQuestId, useCustomTraderByTraderId } from './useSupabase'
+import type { ArcRaidersItem, ArcRaidersQuest, ArcRaidersTrader } from './useArcRaidersApi'
+import type { CustomItem, CustomQuest, CustomTrader } from '@/lib/supabase'
 
 /**
  * Merges API item data with custom Supabase data
@@ -139,6 +139,79 @@ export const useMergedQuest = (quest?: ArcRaidersQuest): EnhancedQuest | undefin
 }
 
 /**
+ * Merges API trader data with custom Supabase data
+ */
+export interface EnhancedTrader extends ArcRaidersTrader {
+  // Custom fields from Supabase
+  customData?: CustomTrader
+  customName?: string
+  customBio?: string
+  customImage?: string
+  locationDetails?: string
+  tradingTips?: string
+  unlockRequirements?: string
+  bestItems?: string[]
+  schedule?: string
+  customTags?: string[]
+}
+
+/**
+ * Hook to get a trader with merged custom data
+ * @param trader - Trader from the API
+ * @returns Trader with custom data merged in
+ */
+export const useMergedTrader = (trader?: ArcRaidersTrader): EnhancedTrader | undefined => {
+  const { data: customData } = useCustomTraderByTraderId(trader?.id)
+
+  return useMemo(() => {
+    if (!trader) return undefined
+
+    const enhanced: EnhancedTrader = {
+      ...trader,
+      customData,
+      // Override with custom fields if available
+      name: customData?.custom_name || trader.name,
+      description: customData?.custom_bio || trader.description,
+      customName: customData?.custom_name,
+      customBio: customData?.custom_bio,
+      customImage: customData?.custom_image,
+      locationDetails: customData?.location_details,
+      tradingTips: customData?.trading_tips,
+      unlockRequirements: customData?.unlock_requirements,
+      bestItems: customData?.best_items,
+      schedule: customData?.schedule,
+      customTags: customData?.tags,
+    }
+
+    // If there's a custom image, use it as primary for all image fields
+    if (customData?.custom_image) {
+      enhanced.avatar = customData.custom_image
+      enhanced.image = customData.custom_image
+      enhanced.imageUrl = customData.custom_image
+      enhanced.icon = customData.custom_image
+      enhanced.thumbnail = customData.custom_image
+    }
+
+    return enhanced
+  }, [trader, customData])
+}
+
+/**
+ * Hook to merge multiple traders with their custom data
+ * @param traders - Array of traders from the API
+ * @returns Array of enhanced traders with custom data
+ */
+export const useMergedTraders = (traders?: ArcRaidersTrader[]): EnhancedTrader[] => {
+  // Note: This doesn't fetch all custom data at once for performance
+  // Each trader's custom data is fetched on-demand
+  // For a list view, you might want to fetch all custom data first
+  return useMemo(() => {
+    if (!traders) return []
+    return traders.map((trader) => ({ ...trader } as EnhancedTrader))
+  }, [traders])
+}
+
+/**
  * Hook to check if custom data exists for an item
  * Useful for showing indicators or badges on items with community enhancements
  */
@@ -148,19 +221,21 @@ export const useHasCustomData = (
 ): boolean => {
   const { data: itemData } = useCustomItemByItemId(type === 'item' ? id : undefined)
   const { data: questData } = useCustomQuestByQuestId(type === 'quest' ? id : undefined)
+  const { data: traderData } = useCustomTraderByTraderId(type === 'trader' ? id : undefined)
 
   return useMemo(() => {
     if (type === 'item') return !!itemData
     if (type === 'quest') return !!questData
+    if (type === 'trader') return !!traderData
     return false
-  }, [type, itemData, questData])
+  }, [type, itemData, questData, traderData])
 }
 
 /**
  * Helper function to check if an item has community enhancements
  * Can be used to show badges like "Community Enhanced" or "Has Tips"
  */
-export const getEnhancementBadges = (customData?: CustomItem | CustomQuest): string[] => {
+export const getEnhancementBadges = (customData?: CustomItem | CustomQuest | CustomTrader): string[] => {
   const badges: string[] = []
 
   if (!customData) return badges
@@ -183,6 +258,14 @@ export const getEnhancementBadges = (customData?: CustomItem | CustomQuest): str
 
   if ('locations_found' in customData && customData.locations_found && customData.locations_found.length > 0) {
     badges.push('Locations Known')
+  }
+
+  if ('trading_tips' in customData && customData.trading_tips) {
+    badges.push('Trading Tips')
+  }
+
+  if ('custom_image' in customData && customData.custom_image) {
+    badges.push('Custom Image')
   }
 
   return badges

@@ -28,3 +28,5 @@ const Badge = ({ children, variant = 'default', className = '' }: BadgeProps) =>
 
 export default Badge
 
+
+

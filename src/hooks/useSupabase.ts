@@ -12,6 +12,8 @@ import type {
   MapMarker,
   HideoutWorkbench,
   HideoutWorkbenchLevel,
+  Expedition,
+  ExpeditionPhase,
 } from '@/lib/supabase'
 
 // Generic CRUD hooks for any table
@@ -248,6 +250,36 @@ export const useCustomTrader = (id?: string) => useSupabaseRecord<CustomTrader>(
 export const useCreateCustomTrader = () => useSupabaseCreate<CustomTrader>('custom_traders')
 export const useUpdateCustomTrader = () => useSupabaseUpdate<CustomTrader>('custom_traders')
 export const useDeleteCustomTrader = () => useSupabaseDelete('custom_traders')
+
+// Helper to get custom trader by trader_id (API trader reference)
+export const useCustomTraderByTraderId = (traderId?: string) => {
+  return useQuery<CustomTrader | null>({
+    queryKey: ['supabase', 'custom_traders', 'by_trader_id', traderId],
+    queryFn: async () => {
+      if (!isSupabaseConfigured() || !traderId) {
+        return null
+      }
+
+      const { data, error } = await supabase
+        .from('custom_traders')
+        .select('*')
+        .eq('trader_id', traderId)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Record not found
+          return null
+        }
+        console.error(`Error fetching custom trader for ${traderId}:`, error)
+        return null
+      }
+
+      return data
+    },
+    enabled: !!traderId && isSupabaseConfigured(),
+  })
+}
 
 // Custom Locations
 export const useCustomLocations = () => useSupabaseTable<CustomLocation>('custom_locations')
@@ -532,4 +564,122 @@ export const useHideoutWorkbenchLevel = (id?: string) => useSupabaseRecord<Hideo
 export const useCreateHideoutWorkbenchLevel = () => useSupabaseCreate<HideoutWorkbenchLevel>('hideout_workbench_levels')
 export const useUpdateHideoutWorkbenchLevel = () => useSupabaseUpdate<HideoutWorkbenchLevel>('hideout_workbench_levels')
 export const useDeleteHideoutWorkbenchLevel = () => useSupabaseDelete('hideout_workbench_levels')
+
+// Expedition - single expedition
+export const useExpedition = () => {
+  return useQuery<Expedition | null>({
+    queryKey: ['supabase', 'expedition'],
+    queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        console.warn('Supabase not configured. Skipping fetch for expedition')
+        return null
+      }
+
+      const { data, error } = await supabase
+        .from('expedition')
+        .select('*')
+        .limit(1)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No expedition found
+          return null
+        }
+        console.error('Error fetching expedition:', error)
+        throw error
+      }
+
+      return data
+    },
+    enabled: isSupabaseConfigured(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export const useCreateExpedition = () => useSupabaseCreate<Expedition>('expedition')
+export const useUpdateExpedition = () => useSupabaseUpdate<Expedition>('expedition')
+export const useDeleteExpedition = () => useSupabaseDelete('expedition')
+
+// Expedition Phases
+export const useExpeditionPhases = (expeditionId?: string) => {
+  return useQuery<ExpeditionPhase[]>({
+    queryKey: ['supabase', 'expedition_phases', expeditionId],
+    queryFn: async () => {
+      if (!isSupabaseConfigured() || !expeditionId) {
+        return []
+      }
+
+      const { data, error } = await supabase
+        .from('expedition_phases')
+        .select('*')
+        .eq('expedition_id', expeditionId)
+        .order('display_order', { ascending: true })
+        .order('phase_number', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching expedition_phases:', error)
+        throw error
+      }
+
+      return data || []
+    },
+    enabled: !!expeditionId && isSupabaseConfigured(),
+  })
+}
+
+// Get expedition with all phases
+export const useExpeditionWithPhases = () => {
+  return useQuery<Expedition & { phases: ExpeditionPhase[] } | null>({
+    queryKey: ['supabase', 'expedition', 'with_phases'],
+    queryFn: async () => {
+      if (!isSupabaseConfigured()) {
+        return null
+      }
+
+      const { data: expedition, error: expeditionError } = await supabase
+        .from('expedition')
+        .select('*')
+        .limit(1)
+        .single()
+
+      if (expeditionError) {
+        if (expeditionError.code === 'PGRST116') {
+          // No expedition found
+          return null
+        }
+        console.error('Error fetching expedition:', expeditionError)
+        throw expeditionError
+      }
+
+      if (!expedition) {
+        return null
+      }
+
+      const { data: phases, error: phasesError } = await supabase
+        .from('expedition_phases')
+        .select('*')
+        .eq('expedition_id', expedition.id)
+        .order('display_order', { ascending: true })
+        .order('phase_number', { ascending: true })
+
+      if (phasesError) {
+        console.error('Error fetching expedition_phases:', phasesError)
+        throw phasesError
+      }
+
+      return {
+        ...expedition,
+        phases: phases || [],
+      }
+    },
+    enabled: isSupabaseConfigured(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export const useExpeditionPhase = (id?: string) => useSupabaseRecord<ExpeditionPhase>('expedition_phases', id)
+export const useCreateExpeditionPhase = () => useSupabaseCreate<ExpeditionPhase>('expedition_phases')
+export const useUpdateExpeditionPhase = () => useSupabaseUpdate<ExpeditionPhase>('expedition_phases')
+export const useDeleteExpeditionPhase = () => useSupabaseDelete('expedition_phases')
 

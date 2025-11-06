@@ -13,6 +13,7 @@ import TraderDetail from './pages/TraderDetail'
 import Maps from './pages/Maps'
 import MapDetail from './pages/MapDetail'
 import HideoutTracking from './pages/HideoutTracker'
+import ExpeditionTracker from './pages/ExpeditionTracker'
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -27,6 +28,10 @@ import HideoutWorkbenchesAdmin from './pages/admin/HideoutWorkbenchesAdmin'
 import HideoutWorkbenchForm from './pages/admin/HideoutWorkbenchForm'
 import HideoutWorkbenchLevelsAdmin from './pages/admin/HideoutWorkbenchLevelsAdmin'
 import HideoutWorkbenchLevelForm from './pages/admin/HideoutWorkbenchLevelForm'
+import CustomTradersAdmin from './pages/admin/CustomTradersAdmin'
+import CustomTraderForm from './pages/admin/CustomTraderForm'
+import ExpeditionAdmin from './pages/admin/ExpeditionAdmin'
+import ExpeditionPhaseForm from './pages/admin/ExpeditionPhaseForm'
 
 function App() {
   return (
@@ -47,11 +52,14 @@ function App() {
         
         {/* Tracking Routes */}
         <Route path="/tracking/hideout" element={<HideoutTracking />} />
+        <Route path="/tracking/expedition" element={<ExpeditionTracker />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/items" element={<CustomItemsAdmin />} />
         <Route path="/admin/items/:id" element={<CustomItemForm />} />
+        <Route path="/admin/traders" element={<CustomTradersAdmin />} />
+        <Route path="/admin/traders/:id" element={<CustomTraderForm />} />
         <Route path="/admin/events" element={<EventsAdmin />} />
         <Route path="/admin/maps" element={<MapsAdmin />} />
         <Route path="/admin/maps/new" element={<MapForm />} />
@@ -64,6 +72,9 @@ function App() {
         <Route path="/admin/hideout-workbenches/:workbenchId/levels" element={<HideoutWorkbenchLevelsAdmin />} />
         <Route path="/admin/hideout-workbenches/:workbenchId/levels/new" element={<HideoutWorkbenchLevelForm />} />
         <Route path="/admin/hideout-workbenches/:workbenchId/levels/:id" element={<HideoutWorkbenchLevelForm />} />
+        <Route path="/admin/expedition" element={<ExpeditionAdmin />} />
+        <Route path="/admin/expedition/phases/new" element={<ExpeditionPhaseForm />} />
+        <Route path="/admin/expedition/phases/:id" element={<ExpeditionPhaseForm />} />
       </Routes>
     </Layout>
   )

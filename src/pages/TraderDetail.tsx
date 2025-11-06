@@ -1,10 +1,13 @@
 import { useParams, Link } from 'react-router-dom'
 import { useTrader, useTraders, useItems, useQuests, linkQuestsToTraders } from '../hooks/useArcRaidersApi'
+import { useMergedTrader } from '../hooks/useMergedData'
 import { ArrowLeft, MapPin, Package, Target, Coins, User } from 'lucide-react'
 
 const TraderDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { data: trader, isLoading, error } = useTrader(id || '')
+  // Merge with custom data (including custom images)
+  const mergedTrader = useMergedTrader(trader)
   const { data: itemsResponse } = useItems()
   const { data: questsResponse } = useQuests()
   const { data: tradersResponse } = useTraders()
@@ -13,18 +16,21 @@ const TraderDetail = () => {
   const allTraders = tradersResponse?.data || []
   const allQuestsRaw = questsResponse?.data || []
   
+  // Use merged trader if available, otherwise fall back to API trader
+  const displayTrader = mergedTrader || trader
+  
   // Link quests to traders
   const allQuests = linkQuestsToTraders(allQuestsRaw, allTraders)
   
   // Get items sold by this trader
-  const itemsSold = trader?.items || trader?.sells || []
+  const itemsSold = displayTrader?.items || displayTrader?.sells || []
   
   // Get quests provided by this trader - match by trader name
-  const questsProvided = trader 
+  const questsProvided = displayTrader 
     ? allQuests.filter((quest: any) => 
-        quest.trader?.name === trader.name ||
-        quest.giver?.name === trader.name ||
-        quest.provider?.name === trader.name
+        quest.trader?.name === displayTrader.name ||
+        quest.giver?.name === displayTrader.name ||
+        quest.provider?.name === displayTrader.name
       )
     : []
   
@@ -102,7 +108,7 @@ const TraderDetail = () => {
     )
   }
   
-  if (error || !trader) {
+  if (error || !displayTrader) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -119,8 +125,8 @@ const TraderDetail = () => {
     )
   }
   
-  // Get the best available image
-  const traderImage = trader.avatar || trader.image || trader.imageUrl || trader.icon || trader.thumbnail
+  // Get the best available image (custom image takes priority)
+  const traderImage = displayTrader?.avatar || displayTrader?.image || displayTrader?.imageUrl || displayTrader?.icon || displayTrader?.thumbnail
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
@@ -140,7 +146,7 @@ const TraderDetail = () => {
           <span>›</span>
           <Link to="/traders" className="hover:text-accent-500">Traders</Link>
           <span>›</span>
-          <span className="text-navy-800 font-medium">{trader.name}</span>
+          <span className="text-navy-800 font-medium">{displayTrader?.name}</span>
         </div>
         
         {/* Main Grid Layout */}
@@ -154,7 +160,7 @@ const TraderDetail = () => {
                   <>
                     <img 
                       src={traderImage} 
-                      alt={trader.name}
+                      alt={displayTrader?.name || 'Trader'}
                       className="max-h-full max-w-full object-contain drop-shadow-2xl rounded-full"
                       onError={(e) => {
                         // Try fallback PNG if webp fails
@@ -188,42 +194,42 @@ const TraderDetail = () => {
               <div className="p-6">
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {trader.type && (
+                  {displayTrader?.type && (
                     <span className="px-3 py-1 text-xs font-bold rounded bg-navy-600 text-white">
-                      {trader.type}
+                      {displayTrader.type}
                     </span>
                   )}
-                  {trader.category && (
+                  {displayTrader?.category && (
                     <span className="px-3 py-1 text-xs font-bold rounded bg-primary-600 text-white">
-                      {trader.category}
+                      {displayTrader.category}
                     </span>
                   )}
                 </div>
                 
                 {/* Name */}
                 <h1 className="text-3xl font-techno font-bold text-navy-800 mb-4 uppercase">
-                  {trader.name}
+                  {displayTrader?.name}
                 </h1>
                 
                 {/* Description */}
-                {trader.description && (
+                {displayTrader?.description && (
                   <p className="text-navy-600 mb-6 leading-relaxed">
-                    {trader.description}
+                    {displayTrader.description}
                   </p>
                 )}
                 
                 {/* Location */}
-                {(trader.location || trader.region) && (
+                {(displayTrader?.location || displayTrader?.region) && (
                   <div className="mb-6 pb-6 border-b border-primary-200">
                     <div className="flex items-center gap-2 text-navy-600 mb-2">
                       <MapPin className="w-5 h-5" />
                       <span className="font-semibold">Location</span>
                     </div>
-                    {trader.location && (
-                      <p className="text-navy-800 ml-7">{trader.location}</p>
+                    {displayTrader.location && (
+                      <p className="text-navy-800 ml-7">{displayTrader.location}</p>
                     )}
-                    {trader.region && trader.region !== trader.location && (
-                      <p className="text-navy-600 ml-7 text-sm">{trader.region}</p>
+                    {displayTrader.region && displayTrader.region !== displayTrader.location && (
+                      <p className="text-navy-600 ml-7 text-sm">{displayTrader.region}</p>
                     )}
                   </div>
                 )}
@@ -251,10 +257,10 @@ const TraderDetail = () => {
                 </div>
                 
                 {/* Tags */}
-                {trader.tags && trader.tags.length > 0 && (
+                {displayTrader?.tags && displayTrader.tags.length > 0 && (
                   <div className="mt-6 pt-6 border-t border-primary-200">
                     <div className="flex flex-wrap gap-2">
-                      {trader.tags.map((tag: string, index: number) => (
+                      {displayTrader.tags.map((tag: string, index: number) => (
                         <span 
                           key={index}
                           className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium"
@@ -422,17 +428,17 @@ const TraderDetail = () => {
             )}
             
             {/* Notes */}
-            {trader.notes && (
+            {displayTrader?.notes && (
               <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
                 <h2 className="text-2xl font-techno font-bold text-navy-800 mb-4">Notes</h2>
                 <p className="text-navy-600 leading-relaxed whitespace-pre-line">
-                  {trader.notes}
+                  {displayTrader.notes}
                 </p>
               </div>
             )}
             
             {/* Empty State */}
-            {itemsSold.length === 0 && questsProvided.length === 0 && !trader.notes && (
+            {itemsSold.length === 0 && questsProvided.length === 0 && !displayTrader?.notes && (
               <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-12 text-center">
                 <User className="w-16 h-16 text-navy-400 mx-auto mb-4" />
                 <p className="text-navy-600 text-lg">No additional information available for this trader.</p>

@@ -1,21 +1,26 @@
 import { Link } from 'react-router-dom'
 import { MapPin, Package, Target } from 'lucide-react'
+import { useMergedTrader } from '@/hooks/useMergedData'
+import type { ArcRaidersTrader } from '@/hooks/useArcRaidersApi'
 
 interface TraderCardProps {
-  trader: any
+  trader: ArcRaidersTrader
 }
 
 const TraderCard = ({ trader }: TraderCardProps) => {
-  // Get the best available image
-  const traderImage = trader.avatar || trader.image || trader.imageUrl || trader.icon || trader.thumbnail
+  // Merge with custom data (including custom images)
+  const mergedTrader = useMergedTrader(trader) || trader
+  
+  // Get the best available image (custom image takes priority)
+  const traderImage = mergedTrader.avatar || mergedTrader.image || mergedTrader.imageUrl || mergedTrader.icon || mergedTrader.thumbnail
   
   // Get items count
-  const itemsCount = (trader.items?.length || 0) + (trader.sells?.length || 0)
-  const questsCount = (trader.quests?.length || 0) + (trader.provides_quests?.length || 0)
+  const itemsCount = (mergedTrader.items?.length || 0) + (mergedTrader.sells?.length || 0)
+  const questsCount = (mergedTrader.quests?.length || 0) + (mergedTrader.provides_quests?.length || 0)
   
   return (
     <Link
-      to={`/traders/${trader.id}`}
+      to={`/traders/${mergedTrader.id}`}
       className="group bg-white rounded-xl border border-primary-200 hover:border-accent-400 transition-all hover:shadow-xl overflow-hidden"
     >
       {/* Image Section */}
@@ -23,7 +28,7 @@ const TraderCard = ({ trader }: TraderCardProps) => {
         {traderImage ? (
           <img 
             src={traderImage} 
-            alt={trader.name}
+            alt={mergedTrader.name}
             className="max-h-full max-w-full object-contain drop-shadow-lg rounded-full"
             onError={(e) => {
               // Try fallback PNG if webp fails
@@ -43,7 +48,7 @@ const TraderCard = ({ trader }: TraderCardProps) => {
         ) : null}
         <div className={`fallback-icon w-24 h-24 bg-white/30 rounded-full flex items-center justify-center ${traderImage ? 'hidden' : ''}`}>
           <span className="text-4xl font-techno text-navy-600">
-            {trader.name?.charAt(0) || '?'}
+            {mergedTrader.name?.charAt(0) || '?'}
           </span>
         </div>
       </div>
@@ -52,37 +57,37 @@ const TraderCard = ({ trader }: TraderCardProps) => {
       <div className="p-5 bg-primary-50">
         {/* Badges */}
         <div className="flex flex-wrap gap-2 mb-3">
-          {trader.type && (
+          {mergedTrader.type && (
             <span className="px-2 py-1 text-xs font-bold rounded bg-navy-600 text-white">
-              {trader.type}
+              {mergedTrader.type}
             </span>
           )}
-          {trader.category && (
+          {mergedTrader.category && (
             <span className="px-2 py-1 text-xs font-bold rounded bg-primary-600 text-white">
-              {trader.category}
+              {mergedTrader.category}
             </span>
           )}
         </div>
         
         {/* Title */}
         <h3 className="text-lg font-techno font-bold text-navy-800 mb-2 uppercase group-hover:text-accent-500 transition-colors">
-          {trader.name}
+          {mergedTrader.name}
         </h3>
         
         {/* Description */}
-        {trader.description && (
+        {mergedTrader.description && (
           <p className="text-sm text-navy-600 mb-4 line-clamp-2 leading-relaxed">
-            {trader.description}
+            {mergedTrader.description}
           </p>
         )}
         
         {/* Location */}
-        {trader.location && (
+        {mergedTrader.location && (
           <div className="flex items-center gap-1 text-sm text-navy-600 mb-3">
             <MapPin className="w-4 h-4" />
-            <span>{trader.location}</span>
-            {trader.region && trader.region !== trader.location && (
-              <span className="text-navy-400">• {trader.region}</span>
+            <span>{mergedTrader.location}</span>
+            {mergedTrader.region && mergedTrader.region !== mergedTrader.location && (
+              <span className="text-navy-400">• {mergedTrader.region}</span>
             )}
           </div>
         )}
