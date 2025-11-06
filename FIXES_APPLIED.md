@@ -120,3 +120,5 @@ Or if API fails:
 
 The site is now fully connected to the real Metaforge API and will display actual Arc Raiders game data! 🎮✨
 
+
+

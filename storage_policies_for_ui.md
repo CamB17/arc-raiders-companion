@@ -153,3 +153,5 @@ After setting up policies, try uploading an image in the admin map form. If you 
 - Policies are correctly configured
 - You're using the correct bucket name in the upload component
 
+
+

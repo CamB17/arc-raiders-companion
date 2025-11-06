@@ -249,6 +249,36 @@ export const useCreateCustomTrader = () => useSupabaseCreate<CustomTrader>('cust
 export const useUpdateCustomTrader = () => useSupabaseUpdate<CustomTrader>('custom_traders')
 export const useDeleteCustomTrader = () => useSupabaseDelete('custom_traders')
 
+// Helper to get custom trader by trader_id (API trader reference)
+export const useCustomTraderByTraderId = (traderId?: string) => {
+  return useQuery<CustomTrader | null>({
+    queryKey: ['supabase', 'custom_traders', 'by_trader_id', traderId],
+    queryFn: async () => {
+      if (!isSupabaseConfigured() || !traderId) {
+        return null
+      }
+
+      const { data, error } = await supabase
+        .from('custom_traders')
+        .select('*')
+        .eq('trader_id', traderId)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Record not found
+          return null
+        }
+        console.error(`Error fetching custom trader for ${traderId}:`, error)
+        return null
+      }
+
+      return data
+    },
+    enabled: !!traderId && isSupabaseConfigured(),
+  })
+}
+
 // Custom Locations
 export const useCustomLocations = () => useSupabaseTable<CustomLocation>('custom_locations')
 export const useCustomLocation = (id?: string) => useSupabaseRecord<CustomLocation>('custom_locations', id)

@@ -89,3 +89,5 @@ CREATE POLICY "Allow public delete on hideout_workbench_levels"
     FOR DELETE 
     USING (true);
 
+
+

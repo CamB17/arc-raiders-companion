@@ -27,6 +27,8 @@ import HideoutWorkbenchesAdmin from './pages/admin/HideoutWorkbenchesAdmin'
 import HideoutWorkbenchForm from './pages/admin/HideoutWorkbenchForm'
 import HideoutWorkbenchLevelsAdmin from './pages/admin/HideoutWorkbenchLevelsAdmin'
 import HideoutWorkbenchLevelForm from './pages/admin/HideoutWorkbenchLevelForm'
+import CustomTradersAdmin from './pages/admin/CustomTradersAdmin'
+import CustomTraderForm from './pages/admin/CustomTraderForm'
 
 function App() {
   return (
@@ -52,6 +54,8 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/items" element={<CustomItemsAdmin />} />
         <Route path="/admin/items/:id" element={<CustomItemForm />} />
+        <Route path="/admin/traders" element={<CustomTradersAdmin />} />
+        <Route path="/admin/traders/:id" element={<CustomTraderForm />} />
         <Route path="/admin/events" element={<EventsAdmin />} />
         <Route path="/admin/maps" element={<MapsAdmin />} />
         <Route path="/admin/maps/new" element={<MapForm />} />

@@ -125,3 +125,5 @@ INSERT INTO public.maps (map_id, name, description, image_url, map_width, map_he
 ('blue-gate', 'Blue Gate', 'Once a steadfast symbol of defiant connection, the Blue Gate now serves as a daunting entryway into the perilous mountain ranges. The surrounding valley bears scars both new and old.', '', 2048, 2048, ARRAY['Night Raid'])
 ON CONFLICT (map_id) DO NOTHING;
 
+
+

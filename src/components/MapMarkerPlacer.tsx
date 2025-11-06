@@ -146,3 +146,5 @@ const MapMarkerPlacer = ({ map, x, y, onPositionChange, markerColor = 'orange' }
 
 export default MapMarkerPlacer
 
+
+

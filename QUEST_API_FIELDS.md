@@ -157,3 +157,5 @@ curl -H "Accept: application/json" \
 ## Total Quests
 - **75 quests** total in the database (as of query)
 
+
+
