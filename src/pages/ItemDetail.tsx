@@ -32,19 +32,42 @@ const getItemTypeColor = (type?: string) => {
   return colors[type?.toLowerCase() || ''] || 'bg-navy-600 text-white'
 }
 
-// Extract base name from variant names (e.g., "Ferro I" -> "Ferro")
+// Extract base name from variant names (e.g., "Ferro I" -> "Ferro", "Hullcracker IV" -> "Hullcracker")
 const extractBaseName = (name: string): string => {
-  // Match Roman numerals (I, II, III, IV, V, etc.) or Arabic numerals at the end
-  const match = name.match(/\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/)
+  if (!name) return ''
+  
+  // Match Roman numerals (IV, IX, VIII, VII, VI, V, III, II, I, X) or Arabic numerals at the end
+  // Match IV and IX before matching I, II, III to avoid partial matches
+  // Handle both space and hyphen separators, case-insensitive matching
+  const match = name.match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
   if (match) {
-    return name.replace(/\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/, '').trim()
+    const base = name.replace(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i, '').trim()
+    return base || name // Fallback to original name if extraction results in empty string
   }
-  return name
+  return name.trim()
 }
 
-// Check if an item name has a variant number
+// Valid Roman numeral variants
+const VALID_VARIANTS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+
+// Check if a variant number is valid (excludes invalid ones like "IIII")
+const isValidVariant = (variant: string): boolean => {
+  return VALID_VARIANTS.includes(variant)
+}
+
+// Check if an item name has a valid variant number
 const hasVariantNumber = (name: string): boolean => {
-  return /\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/.test(name)
+  // Match Roman numerals (IV, IX, VIII, VII, VI, V, III, II, I, X) or Arabic numerals
+  // Match IV and IX before matching I, II, III to avoid partial matches
+  // Handle both space and hyphen separators, case-insensitive matching to handle "iii", "II", etc.
+  const match = name.match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+  if (!match) return false
+  
+  // Normalize the matched variant to uppercase for validation
+  const normalizedVariant = match[1].toUpperCase()
+  
+  // Validate that the matched variant is actually valid (not "IIII" or other invalid patterns)
+  return isValidVariant(normalizedVariant)
 }
 
 const ItemDetail = () => {
@@ -73,28 +96,78 @@ const ItemDetail = () => {
   
   // Find upgraded versions (variants) by base name
   const upgradedVersions = useMemo(() => {
-    if (!item || !item.name) return []
+    if (!item || !item.name || allItems.length === 0) return []
     
-    const itemName = item.name
-    const baseName = hasVariantNumber(itemName) ? extractBaseName(itemName) : itemName
+    const itemName = item.name.trim()
+    
+    // Always try to extract base name - this handles cases where one item has a variant
+    // and another doesn't, but they share the same base name
+    let baseName = extractBaseName(itemName)
+    
+    // If extraction didn't change the name, it means no variant was found
+    // In that case, use the full name as the base (it might be the base version)
+    // But also check if any other items with variants might match this base
+    if (baseName === itemName) {
+      // This item doesn't have a variant number, so use its full name as base
+      baseName = itemName
+    }
+    
+    // Normalize base name for comparison (trim, lowercase)
+    const normalizedBaseName = baseName.toLowerCase().trim()
     
     // Find all items with the same base name (including current item if it's a variant)
     const variants = allItems.filter((otherItem: any) => {
       if (!otherItem.name) return false
       
-      const otherBaseName = hasVariantNumber(otherItem.name) ? extractBaseName(otherItem.name) : otherItem.name
+      const otherName = otherItem.name.trim()
+      // Always try to extract base name from other items too
+      let otherBaseName = extractBaseName(otherName)
       
-      // Match if they have the same base name
-      return otherBaseName.toLowerCase() === baseName.toLowerCase()
+      // If extraction didn't change the name, use the full name
+      if (otherBaseName === otherName) {
+        otherBaseName = otherName
+      }
+      
+      // Normalize for comparison
+      const normalizedOtherBaseName = otherBaseName.toLowerCase().trim()
+      
+      // Match if they have the same base name (case-insensitive, trimmed)
+      const matches = normalizedOtherBaseName === normalizedBaseName
+      
+      // Debug logging for hullcracker items
+      if (normalizedBaseName.includes('hullcracker') || normalizedOtherBaseName.includes('hullcracker')) {
+        console.log('Variant matching:', {
+          currentItem: itemName,
+          currentBase: normalizedBaseName,
+          otherItem: otherName,
+          otherBase: normalizedOtherBaseName,
+          matches,
+          currentHasVariant: hasVariantNumber(itemName),
+          otherHasVariant: hasVariantNumber(otherName)
+        })
+      }
+      
+      return matches
     })
     
     // Only show if we found 2+ variants (including current item)
-    if (variants.length < 2) return []
+    if (variants.length < 2) {
+      // Debug logging
+      if (normalizedBaseName.includes('hullcracker')) {
+        console.log('Not enough variants found:', {
+          baseName: normalizedBaseName,
+          variantsFound: variants.length,
+          variantNames: variants.map((v: any) => v.name),
+          allItemNames: allItems.filter((i: any) => i.name?.toLowerCase().includes('hullcracker')).map((i: any) => i.name)
+        })
+      }
+      return []
+    }
     
     // Sort by variant number
     return variants.sort((a: any, b: any) => {
-      const aMatch = (a.name || '').match(/\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/)
-      const bMatch = (b.name || '').match(/\s+(I{1,4}|V|X|1|2|3|4|5|6|7|8|9|10)$/)
+      const aMatch = (a.name || '').match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+      const bMatch = (b.name || '').match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
       
       // If one has variant number and one doesn't, sort variant number first
       if (aMatch && !bMatch) return -1
@@ -102,16 +175,18 @@ const ItemDetail = () => {
       if (!aMatch && !bMatch) return 0
       
       const getVariantOrder = (variant: string): number => {
-        if (variant === 'I') return 1
-        if (variant === 'II') return 2
-        if (variant === 'III') return 3
-        if (variant === 'IV') return 4
-        if (variant === 'V') return 5
-        if (variant === 'VI') return 6
-        if (variant === 'VII') return 7
-        if (variant === 'VIII') return 8
-        if (variant === 'IX') return 9
-        if (variant === 'X') return 10
+        // Normalize to uppercase for comparison
+        const normalized = variant.toUpperCase()
+        if (normalized === 'I') return 1
+        if (normalized === 'II') return 2
+        if (normalized === 'III') return 3
+        if (normalized === 'IV') return 4
+        if (normalized === 'V') return 5
+        if (normalized === 'VI') return 6
+        if (normalized === 'VII') return 7
+        if (normalized === 'VIII') return 8
+        if (normalized === 'IX') return 9
+        if (normalized === 'X') return 10
         return parseInt(variant) || 0
       }
       

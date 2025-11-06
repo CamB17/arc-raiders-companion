@@ -37,6 +37,7 @@ const Header = () => {
       title: 'Tracking',
       items: [
         { name: 'Hideout Tracker', path: '/tracking/hideout' },
+        { name: 'Expedition Tracker', path: '/tracking/expedition' },
       ]
     }
   ]

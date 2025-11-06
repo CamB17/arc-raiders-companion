@@ -13,6 +13,7 @@ import TraderDetail from './pages/TraderDetail'
 import Maps from './pages/Maps'
 import MapDetail from './pages/MapDetail'
 import HideoutTracking from './pages/HideoutTracker'
+import ExpeditionTracker from './pages/ExpeditionTracker'
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -29,6 +30,8 @@ import HideoutWorkbenchLevelsAdmin from './pages/admin/HideoutWorkbenchLevelsAdm
 import HideoutWorkbenchLevelForm from './pages/admin/HideoutWorkbenchLevelForm'
 import CustomTradersAdmin from './pages/admin/CustomTradersAdmin'
 import CustomTraderForm from './pages/admin/CustomTraderForm'
+import ExpeditionAdmin from './pages/admin/ExpeditionAdmin'
+import ExpeditionPhaseForm from './pages/admin/ExpeditionPhaseForm'
 
 function App() {
   return (
@@ -49,6 +52,7 @@ function App() {
         
         {/* Tracking Routes */}
         <Route path="/tracking/hideout" element={<HideoutTracking />} />
+        <Route path="/tracking/expedition" element={<ExpeditionTracker />} />
         
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
@@ -68,6 +72,9 @@ function App() {
         <Route path="/admin/hideout-workbenches/:workbenchId/levels" element={<HideoutWorkbenchLevelsAdmin />} />
         <Route path="/admin/hideout-workbenches/:workbenchId/levels/new" element={<HideoutWorkbenchLevelForm />} />
         <Route path="/admin/hideout-workbenches/:workbenchId/levels/:id" element={<HideoutWorkbenchLevelForm />} />
+        <Route path="/admin/expedition" element={<ExpeditionAdmin />} />
+        <Route path="/admin/expedition/phases/new" element={<ExpeditionPhaseForm />} />
+        <Route path="/admin/expedition/phases/:id" element={<ExpeditionPhaseForm />} />
       </Routes>
     </Layout>
   )

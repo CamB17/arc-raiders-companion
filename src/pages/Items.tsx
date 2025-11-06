@@ -201,14 +201,14 @@ const getRarityOrder = (rarity?: string): number => {
   return order[rarityLower] || 0 // Items without rarity go first (0)
 }
 
-// Extract base name from variant names (e.g., "Ferro I" -> "Ferro")
+// Extract base name from variant names (e.g., "Ferro I" -> "Ferro", "Hullcracker IV" -> "Hullcracker")
 const extractBaseName = (name: string): string => {
   // Match Roman numerals (IV, IX, VIII, VII, VI, V, III, II, I, X) or Arabic numerals at the end
   // Match IV and IX before matching I, II, III to avoid partial matches
-  // Case-insensitive matching
-  const match = name.match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+  // Handle both space and hyphen separators, case-insensitive matching
+  const match = name.match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
   if (match) {
-    return name.replace(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i, '').trim()
+    return name.replace(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i, '').trim()
   }
   return name
 }
@@ -225,8 +225,8 @@ const isValidVariant = (variant: string): boolean => {
 const hasInvalidVariant = (name: string): boolean => {
   // Check for invalid patterns: IIII (4 I's), IIIII (5 I's), etc., or any 4+ consecutive I's
   // This catches invalid Roman numeral patterns that aren't valid variants
-  // Case-insensitive matching
-  const invalidMatch = name.match(/\s+I{4,}$/i) // 4 or more consecutive I's
+  // Handle both space and hyphen separators, case-insensitive matching
+  const invalidMatch = name.match(/[\s-]+I{4,}$/i) // 4 or more consecutive I's
   return !!invalidMatch
 }
 
@@ -237,8 +237,8 @@ const hasVariantNumber = (name: string): boolean => {
   
   // Match Roman numerals (IV, IX, VIII, VII, VI, V, III, II, I, X) or Arabic numerals
   // Match IV and IX before matching I, II, III to avoid partial matches
-  // Case-insensitive matching to handle "iii", "II", etc.
-  const match = name.match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+  // Handle both space and hyphen separators, case-insensitive matching to handle "iii", "II", etc.
+  const match = name.match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
   if (!match) return false
   
   // Normalize the matched variant to uppercase for validation
@@ -250,7 +250,7 @@ const hasVariantNumber = (name: string): boolean => {
 
 // Check if an item is the first variant (I or 1) - these should be shown
 const isFirstVariant = (name: string): boolean => {
-  const match = name.match(/\s+(I|1)$/i) // Case-insensitive
+  const match = name.match(/[\s-]+(I|1)$/i) // Handle both space and hyphen, case-insensitive
   if (!match) return false
   const normalizedVariant = match[1].toUpperCase()
   return isValidVariant(normalizedVariant)
@@ -259,8 +259,8 @@ const isFirstVariant = (name: string): boolean => {
 // Check if an item is a higher variant (II, III, IV, etc.) - these should be hidden
 const isHigherVariant = (name: string): boolean => {
   // Match IV and IX before matching II, III to avoid partial matches
-  // Case-insensitive matching
-  const match = name.match(/\s+(IV|IX|VIII|VII|VI|V|III|II|X|2|3|4|5|6|7|8|9|10)$/i)
+  // Handle both space and hyphen separators, case-insensitive matching
+  const match = name.match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|X|2|3|4|5|6|7|8|9|10)$/i)
   if (!match) return false
   const normalizedVariant = match[1].toUpperCase()
   return isValidVariant(normalizedVariant)
@@ -569,7 +569,7 @@ const Items = () => {
                   const standaloneItems: typeof categoryItems = []
                   
                   categoryItems.forEach(item => {
-                    const itemName = item.name || ''
+                    const itemName = (item.name || '').trim()
                     
                     // Skip invalid variants (like "IIII") - don't show them at all
                     if (hasInvalidVariant(itemName)) {
@@ -581,10 +581,13 @@ const Items = () => {
                     if (hasVariantNumber(itemName)) {
                       // Has a valid variant - group it (even if it's III, II, etc.)
                       const baseName = extractBaseName(itemName)
-                      if (!variantGroups[baseName]) {
-                        variantGroups[baseName] = []
+                      // Normalize base name to ensure consistent grouping (case-insensitive, trimmed)
+                      const normalizedBaseName = baseName.toLowerCase().trim()
+                      
+                      if (!variantGroups[normalizedBaseName]) {
+                        variantGroups[normalizedBaseName] = []
                       }
-                      variantGroups[baseName].push(item)
+                      variantGroups[normalizedBaseName].push(item)
                     } else {
                       // No valid variant pattern - standalone item
                       standaloneItems.push(item)
@@ -594,15 +597,16 @@ const Items = () => {
                   // Filter variant groups to only show those with first variant (I)
                   // Also ensure all variants are included and sorted correctly
                   const variantGroupsToShow: Record<string, typeof categoryItems> = {}
-                  Object.keys(variantGroups).forEach(baseName => {
-                    const hasFirstVariant = variantGroups[baseName].some(item => 
+                  Object.keys(variantGroups).forEach(normalizedBaseName => {
+                    const groupItems = variantGroups[normalizedBaseName]
+                    const hasFirstVariant = groupItems.some(item => 
                       isFirstVariant(item.name || '')
                     )
                     if (hasFirstVariant) {
                       // Sort variants within the group to ensure correct order (I, II, III, IV)
-                      variantGroups[baseName].sort((a, b) => {
-                        const aMatch = (a.name || '').match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
-                        const bMatch = (b.name || '').match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+                      groupItems.sort((a, b) => {
+                        const aMatch = (a.name || '').match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+                        const bMatch = (b.name || '').match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
                         
                         if (!aMatch || !bMatch) return 0
                         
@@ -624,7 +628,7 @@ const Items = () => {
                         
                         return getVariantOrder(aMatch[1]) - getVariantOrder(bMatch[1])
                       })
-                      variantGroupsToShow[baseName] = variantGroups[baseName]
+                      variantGroupsToShow[normalizedBaseName] = groupItems
                     } else {
                       // If no first variant (I), don't show this group on main page
                       // The variants will be hidden from main display
@@ -698,7 +702,7 @@ const Items = () => {
                   const standaloneItems: typeof categoryItems = []
                   
                   categoryItems.forEach(item => {
-                    const itemName = item.name || ''
+                    const itemName = (item.name || '').trim()
                     
                     // Skip invalid variants (like "IIII") - don't show them at all
                     if (hasInvalidVariant(itemName)) {
@@ -710,10 +714,13 @@ const Items = () => {
                     if (hasVariantNumber(itemName)) {
                       // Has a valid variant - group it (even if it's III, II, etc.)
                       const baseName = extractBaseName(itemName)
-                      if (!variantGroups[baseName]) {
-                        variantGroups[baseName] = []
+                      // Normalize base name to ensure consistent grouping (case-insensitive, trimmed)
+                      const normalizedBaseName = baseName.toLowerCase().trim()
+                      
+                      if (!variantGroups[normalizedBaseName]) {
+                        variantGroups[normalizedBaseName] = []
                       }
-                      variantGroups[baseName].push(item)
+                      variantGroups[normalizedBaseName].push(item)
                     } else {
                       // No valid variant pattern - standalone item
                       standaloneItems.push(item)
@@ -723,15 +730,16 @@ const Items = () => {
                   // Filter variant groups to only show those with first variant (I)
                   // Also ensure all variants are included and sorted correctly
                   const variantGroupsToShow: Record<string, typeof categoryItems> = {}
-                  Object.keys(variantGroups).forEach(baseName => {
-                    const hasFirstVariant = variantGroups[baseName].some(item => 
+                  Object.keys(variantGroups).forEach(normalizedBaseName => {
+                    const groupItems = variantGroups[normalizedBaseName]
+                    const hasFirstVariant = groupItems.some(item => 
                       isFirstVariant(item.name || '')
                     )
                     if (hasFirstVariant) {
                       // Sort variants within the group to ensure correct order (I, II, III, IV)
-                      variantGroups[baseName].sort((a, b) => {
-                        const aMatch = (a.name || '').match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
-                        const bMatch = (b.name || '').match(/\s+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+                      groupItems.sort((a, b) => {
+                        const aMatch = (a.name || '').match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
+                        const bMatch = (b.name || '').match(/[\s-]+(IV|IX|VIII|VII|VI|V|III|II|I|X|1|2|3|4|5|6|7|8|9|10)$/i)
                         
                         if (!aMatch || !bMatch) return 0
                         
@@ -753,7 +761,7 @@ const Items = () => {
                         
                         return getVariantOrder(aMatch[1]) - getVariantOrder(bMatch[1])
                       })
-                      variantGroupsToShow[baseName] = variantGroups[baseName]
+                      variantGroupsToShow[normalizedBaseName] = groupItems
                     } else {
                       // If no first variant (I), don't show this group on main page
                       // The variants will be hidden from main display
