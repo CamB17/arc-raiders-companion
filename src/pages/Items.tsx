@@ -273,9 +273,28 @@ const Items = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedRarity, setSelectedRarity] = useState<string>('all')
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory>('All')
+  const [selectedFlags, setSelectedFlags] = useState<string[]>([])
+  const [showOnlyFlagged, setShowOnlyFlagged] = useState(false)
   const [rarityDropdownOpen, setRarityDropdownOpen] = useState(false)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [showLegend, setShowLegend] = useState(false)
+  
+  // Available flag filters
+  const flagFilters = [
+    { flag: 'quest_item', label: 'Quest Items', Icon: Scroll, color: 'text-purple-600' },
+    { flag: 'hideout_item', label: 'Hideout Items', Icon: Home, color: 'text-amber-600' },
+    { flag: 'project_item', label: 'Project Items', Icon: Rocket, color: 'text-cyan-600' },
+    { flag: 'crafting_item', label: 'Crafting Items', Icon: Hammer, color: 'text-orange-600' },
+    { flag: 'important_save', label: 'Important', Icon: Star, color: 'text-yellow-600' },
+  ]
+  
+  const toggleFlag = (flag: string) => {
+    setSelectedFlags(prev => 
+      prev.includes(flag) 
+        ? prev.filter(f => f !== flag)
+        : [...prev, flag]
+    )
+  }
   
   // Extract items from paginated response
   const items = response?.data || []
@@ -339,13 +358,29 @@ const Items = () => {
     return cats
   }, [itemsByCategory])
   
-  // Filter items based on search, rarity, and category
+  // Filter items based on search, rarity, category, and flags
   const getFilteredItems = useMemo(() => {
     let filtered = items.filter(item => {
       const matchesSearch = item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            item.description?.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesRarity = selectedRarity === 'all' || item.rarity === selectedRarity
-      return matchesSearch && matchesRarity
+      
+      // Flag filtering
+      let matchesFlags = true
+      if (selectedFlags.length > 0) {
+        const itemFlags = getItemFlags(item.id)
+        // Item must have at least one of the selected flags
+        matchesFlags = selectedFlags.some(flag => itemFlags.includes(flag))
+      }
+      
+      // Show only items with any flags
+      let matchesFlaggedOnly = true
+      if (showOnlyFlagged) {
+        const itemFlags = getItemFlags(item.id)
+        matchesFlaggedOnly = itemFlags.length > 0
+      }
+      
+      return matchesSearch && matchesRarity && matchesFlags && matchesFlaggedOnly
     })
     
     // If a specific category is selected, filter by category
@@ -357,7 +392,7 @@ const Items = () => {
     }
     
     return filtered
-  }, [items, searchQuery, selectedRarity, selectedCategory])
+  }, [items, searchQuery, selectedRarity, selectedCategory, selectedFlags, showOnlyFlagged, itemFlagsMap])
   
   // Group filtered items by category for display and sort by rarity
   const filteredItemsByCategory = useMemo(() => {
@@ -556,6 +591,49 @@ const Items = () => {
                     })}
                   </div>
                 </>
+              )}
+            </div>
+          </div>
+          
+          {/* Flag Filters */}
+          <div className="mt-4 pt-4 border-t border-primary-200">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-semibold text-navy-700">
+                Filter by Usage:
+              </label>
+              <button
+                onClick={() => setShowOnlyFlagged(!showOnlyFlagged)}
+                className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                  showOnlyFlagged
+                    ? 'bg-accent-100 text-accent-700 font-medium'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {showOnlyFlagged ? 'Showing Flagged Only' : 'Show Flagged Only'}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {flagFilters.map(({ flag, label, Icon, color }) => (
+                <button
+                  key={flag}
+                  onClick={() => toggleFlag(flag)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
+                    selectedFlags.includes(flag)
+                      ? 'border-accent-500 bg-accent-50 text-accent-700'
+                      : 'border-primary-200 bg-white text-navy-600 hover:border-primary-300'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${selectedFlags.includes(flag) ? 'text-accent-600' : color}`} />
+                  <span className="text-sm font-medium">{label}</span>
+                </button>
+              ))}
+              {selectedFlags.length > 0 && (
+                <button
+                  onClick={() => setSelectedFlags([])}
+                  className="px-3 py-2 text-sm text-navy-500 hover:text-navy-700 underline"
+                >
+                  Clear filters
+                </button>
               )}
             </div>
           </div>
@@ -859,12 +937,14 @@ const Items = () => {
         ) : (
           <div className="text-center py-12">
             <p className="text-navy-500 text-lg">No items found matching your criteria.</p>
-            {(searchQuery || selectedRarity !== 'all' || selectedCategory !== 'All') && (
+            {(searchQuery || selectedRarity !== 'all' || selectedCategory !== 'All' || selectedFlags.length > 0 || showOnlyFlagged) && (
               <button
                 onClick={() => {
                   setSearchQuery('')
                   setSelectedRarity('all')
                   setSelectedCategory('All')
+                  setSelectedFlags([])
+                  setShowOnlyFlagged(false)
                 }}
                 className="mt-4 px-4 py-2 bg-accent-500 text-white rounded-lg hover:bg-accent-600 transition-colors"
               >
