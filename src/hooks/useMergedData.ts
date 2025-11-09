@@ -25,6 +25,7 @@ export interface EnhancedItem extends ArcRaidersItem {
   metaRating?: number
   metaNotes?: string
   customTags?: string[]
+  itemFlags?: string[]
 }
 
 /**
@@ -53,6 +54,7 @@ export const useMergedItem = (item?: ArcRaidersItem): EnhancedItem | undefined =
       metaRating: customData?.meta_rating,
       metaNotes: customData?.meta_notes,
       customTags: customData?.tags,
+      itemFlags: customData?.item_flags,
     }
 
     // If there's a custom image, use it as primary

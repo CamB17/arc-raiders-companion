@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useItems } from '../hooks/useArcRaidersApi'
-import { Search, Filter, ChevronDown, ChevronUp } from 'lucide-react'
+import { useCustomItems } from '../hooks/useSupabase'
+import { Search, Filter, ChevronDown, ChevronUp, Star, Scroll, Home, Rocket, Hammer, Info } from 'lucide-react'
 import ItemCard from '../components/ItemCard'
 import VariantGroupCard from '../components/VariantGroupCard'
 
@@ -268,14 +269,32 @@ const isHigherVariant = (name: string): boolean => {
 
 const Items = () => {
   const { data: response, isLoading, error } = useItems()
+  const { data: customItems = [] } = useCustomItems()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedRarity, setSelectedRarity] = useState<string>('all')
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory>('All')
   const [rarityDropdownOpen, setRarityDropdownOpen] = useState(false)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
+  const [showLegend, setShowLegend] = useState(false)
   
   // Extract items from paginated response
   const items = response?.data || []
+  
+  // Create a map of item_id -> item_flags for quick lookup
+  const itemFlagsMap = useMemo(() => {
+    const map = new Map<string, string[]>()
+    customItems.forEach(customItem => {
+      if (customItem.item_id && customItem.item_flags && customItem.item_flags.length > 0) {
+        map.set(customItem.item_id, customItem.item_flags)
+      }
+    })
+    return map
+  }, [customItems])
+  
+  // Helper to get flags for an item
+  const getItemFlags = (itemId: string) => {
+    return itemFlagsMap.get(itemId) || []
+  }
   
   // Extract unique rarities
   const rarities = useMemo(() => {
@@ -421,12 +440,49 @@ const Items = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-techno font-bold text-navy-800 mb-3">
-            ITEMS DATABASE
-          </h1>
-          <p className="text-navy-600">
-            Browse all weapons, gear, and resources available in Arc Raiders
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-techno font-bold text-navy-800 mb-3">
+                ITEMS DATABASE
+              </h1>
+              <p className="text-navy-600">
+                Browse all weapons, gear, and resources available in Arc Raiders
+              </p>
+            </div>
+            {/* Legend Toggle */}
+            <button
+              onClick={() => setShowLegend(!showLegend)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors text-sm font-medium text-navy-700 flex-shrink-0"
+            >
+              <Info className="w-4 h-4" />
+              <span>Icon Guide</span>
+            </button>
+          </div>
+          
+          {/* Legend */}
+          {showLegend && (
+            <div className="mt-4 bg-white rounded-xl border border-primary-200 p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-navy-700 mb-3 uppercase tracking-wide">
+                Item Category Icons
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                {[
+                  { flag: 'important_save', label: 'Important Save', icon: Star, color: 'text-yellow-500' },
+                  { flag: 'quest_item', label: 'Quest Item', icon: Scroll, color: 'text-blue-500' },
+                  { flag: 'hideout_item', label: 'Hideout Item', icon: Home, color: 'text-green-500' },
+                  { flag: 'project_item', label: 'Project Item', icon: Rocket, color: 'text-purple-500' },
+                  { flag: 'crafting_item', label: 'Crafting Item', icon: Hammer, color: 'text-orange-500' },
+                ].map(({ flag, label, icon: Icon, color }) => (
+                  <div key={flag} className="flex items-center gap-2 text-sm">
+                    <div className={`${color} bg-white/90 rounded-full p-1.5 shadow-sm`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-navy-700">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Filters */}
@@ -676,13 +732,13 @@ const Items = () => {
                               ))}
                             {/* Render standalone items */}
                             {standaloneItems.map((item) => (
-                          <ItemCard key={item.id} item={item} />
+                          <ItemCard key={item.id} item={item} itemFlags={getItemFlags(item.id)} />
                         ))}
                             {/* Render single-item variant groups as regular cards */}
                             {Object.entries(variantGroupsToShow)
                               .filter(([, variantItems]) => variantItems.length === 1)
                               .map(([, variantItems]) => (
-                                <ItemCard key={variantItems[0].id} item={variantItems[0]} />
+                                <ItemCard key={variantItems[0].id} item={variantItems[0]} itemFlags={getItemFlags(variantItems[0].id)} />
                               ))}
                           </div>
                         </div>
@@ -782,13 +838,13 @@ const Items = () => {
                         ))}
                       {/* Render standalone items */}
                       {standaloneItems.map((item) => (
-                    <ItemCard key={item.id} item={item} />
+                    <ItemCard key={item.id} item={item} itemFlags={getItemFlags(item.id)} />
                       ))}
                       {/* Render single-item variant groups as regular cards */}
                       {Object.entries(variantGroupsToShow)
                         .filter(([, variantItems]) => variantItems.length === 1)
                         .map(([, variantItems]) => (
-                          <ItemCard key={variantItems[0].id} item={variantItems[0]} />
+                          <ItemCard key={variantItems[0].id} item={variantItems[0]} itemFlags={getItemFlags(variantItems[0].id)} />
                   ))}
                 </div>
                   )

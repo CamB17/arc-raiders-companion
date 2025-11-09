@@ -46,10 +46,10 @@ const AdminDashboard = () => {
 
   const adminSections = [
     {
-      title: 'Custom Items',
-      description: 'Add custom data to items from the API',
+      title: 'Items',
+      description: 'Edit item data, flags, and metadata',
       icon: Package,
-      path: '/admin/items',
+      path: '/admin/items-list',
       count: customItems?.length || 0,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -324,10 +324,10 @@ VITE_SUPABASE_ANON_KEY=your_anon_key`}
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
-              <Link to="/admin/items/new">
+              <Link to="/admin/items-list">
                 <Button variant="primary">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Custom Item
+                  <Package className="w-4 h-4 mr-2" />
+                  Edit Items
                 </Button>
               </Link>
               <Link to="/admin/guides/new">

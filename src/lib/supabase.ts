@@ -101,6 +101,7 @@ export interface CustomItem {
   meta_notes?: string // Meta game notes
   extra_stats?: Record<string, any> // Additional stats
   tags?: string[] // Custom tags
+  item_flags?: string[] // Item category flags: 'important_save', 'quest_item', 'hideout_item', 'project_item', 'crafting_item'
   created_at?: string
   updated_at?: string
 }

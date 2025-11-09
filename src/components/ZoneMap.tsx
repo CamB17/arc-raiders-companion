@@ -34,9 +34,9 @@ const createCustomMarkerIcon = (
     arrow: '↑',
     question: '?',
     skull: '☠',
-    leaf: '🍃',
-    box: '📦',
-    building: '🏢',
+    leaf: '♣',
+    box: '■',
+    building: '▲',
   }
 
   const symbolHtml = symbol && symbolContent[symbol] ? `

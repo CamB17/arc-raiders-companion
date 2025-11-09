@@ -2,7 +2,8 @@ import { useParams, Link } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useItem, useArcs, useItems, findArcsThatDropItem } from '../hooks/useArcRaidersApi'
-import { ArrowLeft, Weight, Coins, Package, User, TrendingUp, Recycle, Target, Layers } from 'lucide-react'
+import { useItemUseCases } from '../hooks/useItemUseCases'
+import { ArrowLeft, Weight, Coins, Package, User, TrendingUp, Recycle, Target, Layers, Scroll, Hammer, Home, Rocket } from 'lucide-react'
 import ItemPreview from '../components/ItemPreview'
 
 const getRarityStyles = (rarity?: string): { backgroundColor: string; color: string } => {
@@ -77,6 +78,9 @@ const ItemDetail = () => {
   const { data: itemsResponse } = useItems()
   const arcs = arcsResponse?.data || []
   const allItems = itemsResponse?.data || []
+  
+  // Get all use cases for this item
+  const useCases = useItemUseCases(id)
   
   // State for hover preview
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null)
@@ -1384,6 +1388,243 @@ const ItemDetail = () => {
                       {recipe}
                     </span>
                   ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Related Quests */}
+            {(useCases.questsRequired.length > 0 || useCases.questsRewarded.length > 0) && (
+              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
+                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
+                  <Scroll className="w-5 h-5" />
+                  Related Quests
+                </h2>
+                
+                {/* Required For */}
+                {useCases.questsRequired.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-navy-700 mb-3 uppercase tracking-wide">
+                      Required for:
+                    </h3>
+                    <div className="space-y-2">
+                      {useCases.questsRequired.map((useCase, index) => {
+                        const quest = useCase.quest
+                        const trader = quest.trader || quest.giver || quest.provider
+                        
+                        return (
+                          <Link
+                            key={`required-${quest.id}-${index}`}
+                            to={`/quests/${quest.id}`}
+                            className="block p-3 rounded-lg border border-primary-200 hover:border-accent-400 hover:bg-primary-50 transition-colors group"
+                            onMouseEnter={(e) => {
+                              setHoveredItemId(null) // Clear item hover when hovering quest
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-navy-800 font-medium group-hover:text-accent-600 transition-colors">
+                                      {quest.name}
+                                    </span>
+                                    {trader && (
+                                      <span className="text-xs text-navy-500">
+                                        ({trader.name})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="text-navy-600 font-bold text-sm">
+                                x{useCase.quantity}
+                              </span>
+                            </div>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Rewarded By */}
+                {useCases.questsRewarded.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-navy-700 mb-3 uppercase tracking-wide">
+                      Rewarded by:
+                    </h3>
+                    <div className="space-y-2">
+                      {useCases.questsRewarded.map((useCase, index) => {
+                        const quest = useCase.quest
+                        const trader = quest.trader || quest.giver || quest.provider
+                        
+                        return (
+                          <Link
+                            key={`rewarded-${quest.id}-${index}`}
+                            to={`/quests/${quest.id}`}
+                            className="block p-3 rounded-lg border border-primary-200 hover:border-accent-400 hover:bg-primary-50 transition-colors group"
+                            onMouseEnter={(e) => {
+                              setHoveredItemId(null) // Clear item hover when hovering quest
+                            }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-navy-800 font-medium group-hover:text-accent-600 transition-colors">
+                                      {quest.name}
+                                    </span>
+                                    {trader && (
+                                      <span className="text-xs text-navy-500">
+                                        ({trader.name})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <span className="text-accent-600 font-bold text-sm">
+                                Reward: x{useCase.quantity}
+                              </span>
+                            </div>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Used in Crafting */}
+            {useCases.craftingRecipes.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
+                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
+                  <Hammer className="w-5 h-5" />
+                  Used in Crafting
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {useCases.craftingRecipes.map((useCase, index) => {
+                    const craftItem = useCase.item
+                    const itemImage = craftItem.icon || craftItem.image || craftItem.imageUrl || craftItem.thumbnail
+                    const itemId = craftItem.id
+                    
+                    return (
+                      <Link
+                        key={`crafting-${itemId}-${index}`}
+                        to={`/items/${itemId}`}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-primary-200 hover:border-accent-400 hover:bg-primary-50 transition-colors group"
+                        onMouseEnter={(e) => {
+                          if (itemId) {
+                            setHoveredItemId(itemId)
+                            setHoverPosition({ x: e.clientX, y: e.clientY })
+                          }
+                        }}
+                        onMouseLeave={() => setHoveredItemId(null)}
+                        onMouseMove={(e) => {
+                          if (hoveredItemId === itemId) {
+                            setHoverPosition({ x: e.clientX, y: e.clientY })
+                          }
+                        }}
+                      >
+                        {itemImage ? (
+                          <img 
+                            src={itemImage} 
+                            alt={craftItem.name}
+                            className="w-12 h-12 object-contain flex-shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              e.currentTarget.parentElement?.querySelector('.crafting-fallback')?.classList.remove('hidden')
+                            }}
+                          />
+                        ) : null}
+                        <div className={`crafting-fallback w-12 h-12 bg-primary-100 rounded flex items-center justify-center flex-shrink-0 ${itemImage ? 'hidden' : ''}`}>
+                          <Package className="w-6 h-6 text-navy-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-navy-800 font-medium group-hover:text-accent-600 transition-colors truncate">
+                            {craftItem.name}
+                          </div>
+                        </div>
+                        <span className="text-navy-600 font-bold text-sm flex-shrink-0">
+                          x{useCase.quantity}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Used in Hideout Upgrades */}
+            {useCases.hideoutUpgrades.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
+                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
+                  <Home className="w-5 h-5" />
+                  Used in Hideout Upgrades
+                </h2>
+                <div className="space-y-3">
+                  {useCases.hideoutUpgrades.map((useCase, index) => {
+                    const workbench = useCase.workbench
+                    const level = useCase.level
+                    
+                    return (
+                      <div
+                        key={`hideout-${workbench.id}-${level.id}-${index}`}
+                        className="p-3 rounded-lg border border-primary-200 hover:bg-primary-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-navy-800 font-medium">
+                              {workbench.name}
+                            </div>
+                            <div className="text-sm text-navy-600">
+                              Level {level.level_number}
+                            </div>
+                          </div>
+                          <span className="text-navy-600 font-bold text-sm">
+                            x{useCase.quantity}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Used in Projects */}
+            {useCases.expeditionPhases.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg border border-primary-200 p-6">
+                <h2 className="text-xl font-techno font-bold text-navy-800 mb-4 flex items-center gap-2">
+                  <Rocket className="w-5 h-5" />
+                  Used in Projects
+                </h2>
+                <div className="space-y-3">
+                  {useCases.expeditionPhases.map((useCase, index) => {
+                    const phase = useCase.phase
+                    const expeditionName = useCase.expeditionName
+                    
+                    return (
+                      <Link
+                        key={`expedition-${phase.id}-${index}`}
+                        to="/tracking/expedition"
+                        className="block p-3 rounded-lg border border-primary-200 hover:border-accent-400 hover:bg-primary-50 transition-colors group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-navy-800 font-medium group-hover:text-accent-600 transition-colors">
+                              {expeditionName}
+                            </div>
+                            <div className="text-sm text-navy-600">
+                              {phase.phase_name || `Phase ${phase.phase_number}`}
+                            </div>
+                          </div>
+                          <span className="text-navy-600 font-bold text-sm">
+                            x{useCase.quantity}
+                          </span>
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             )}

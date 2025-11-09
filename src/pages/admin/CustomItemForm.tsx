@@ -1,27 +1,38 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, Star, Scroll, Home, Rocket, Hammer, Sparkles } from 'lucide-react'
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/Card'
 import Button from '@/components/Button'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import {
   useCustomItem,
+  useCustomItemByItemId,
   useCreateCustomItem,
   useUpdateCustomItem,
 } from '@/hooks/useSupabase'
+import { useAutoFlags } from '@/hooks/useAutoFlags'
 import type { CustomItem } from '@/lib/supabase'
 
 const CustomItemForm = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const isEditMode = id !== 'new'
+  const isEditMode = id !== 'new' && id !== undefined
 
-  const { data: existingItem, isLoading } = useCustomItem(isEditMode ? id : undefined)
+  // If editing, first try to get by custom item ID, then by item_id
+  const { data: existingItemById, isLoading: loadingById } = useCustomItem(isEditMode ? id : undefined)
+  const { data: existingItemByItemId, isLoading: loadingByItemId } = useCustomItemByItemId(isEditMode ? id : undefined)
+  
+  const existingItem = existingItemById || existingItemByItemId
+  const isLoading = loadingById || loadingByItemId
+  
   const createCustomItem = useCreateCustomItem()
   const updateCustomItem = useUpdateCustomItem()
+  
+  // Get auto-detected flags for this item
+  const { flags: autoFlags, reasons: autoFlagReasons } = useAutoFlags(isEditMode ? id : undefined)
 
   const [formData, setFormData] = useState<Partial<CustomItem>>({
-    item_id: '',
+    item_id: isEditMode ? id : '',
     custom_name: '',
     custom_description: '',
     custom_image: '',
@@ -31,6 +42,7 @@ const CustomItemForm = () => {
     meta_rating: undefined,
     meta_notes: '',
     tags: [],
+    item_flags: [],
   })
 
   const [locationInput, setLocationInput] = useState('')
@@ -54,17 +66,19 @@ const CustomItemForm = () => {
     try {
       console.log('Attempting to save custom item with data:', formData)
       
-      if (isEditMode && id) {
+      if (existingItem?.id) {
+        // Update existing custom item
         await updateCustomItem.mutateAsync({
-          id,
+          id: existingItem.id,
           updates: formData,
         })
         console.log('✓ Successfully updated custom item')
       } else {
+        // Create new custom item
         await createCustomItem.mutateAsync(formData)
         console.log('✓ Successfully created custom item')
       }
-      navigate('/admin/items')
+      navigate('/admin/items-list')
     } catch (error: any) {
       console.error('✗ Failed to save custom item:', error)
       console.error('Error details:', {
@@ -150,6 +164,26 @@ const CustomItemForm = () => {
     })
   }
 
+  const toggleItemFlag = (flag: string) => {
+    const currentFlags = formData.item_flags || []
+    const newFlags = currentFlags.includes(flag)
+      ? currentFlags.filter(f => f !== flag)
+      : [...currentFlags, flag]
+    setFormData({
+      ...formData,
+      item_flags: newFlags,
+    })
+  }
+  
+  const applyAutoFlags = () => {
+    const currentFlags = formData.item_flags || []
+    const mergedFlags = Array.from(new Set([...currentFlags, ...autoFlags]))
+    setFormData({
+      ...formData,
+      item_flags: mergedFlags,
+    })
+  }
+
   if (isLoading && isEditMode) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -162,15 +196,15 @@ const CustomItemForm = () => {
     <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <Link
-          to="/admin/items"
+          to="/admin/items-list"
           className="inline-flex items-center text-accent-600 hover:text-accent-700 mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Custom Items
+          Back to Items
         </Link>
 
         <h1 className="text-4xl font-techno font-bold text-navy-800 mb-8">
-          {isEditMode ? 'EDIT CUSTOM ITEM' : 'NEW CUSTOM ITEM'}
+          {existingItem ? 'EDIT ITEM DATA' : 'ADD ITEM DATA'}
         </h1>
 
         <form onSubmit={handleSubmit}>
@@ -395,6 +429,84 @@ const CustomItemForm = () => {
                     ))}
                   </div>
                 </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-navy-700">
+                      Item Categories (Flags)
+                    </label>
+                    {autoFlags.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={applyAutoFlags}
+                      >
+                        <Sparkles className="w-4 h-4 mr-1" />
+                        Apply {autoFlags.length} Auto-Detected
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-sm text-navy-500 mb-3">
+                    Mark this item with categories to show icons on item cards
+                  </p>
+                  
+                  {autoFlags.length > 0 && (
+                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-800 mb-1">
+                            Auto-Detected Usage:
+                          </p>
+                          <ul className="text-xs text-blue-700 space-y-0.5">
+                            {Object.entries(autoFlagReasons).map(([flag, reasons]) => (
+                              <li key={flag}>
+                                <strong className="capitalize">{flag.replace(/_/g, ' ')}:</strong> {reasons.length} use{reasons.length !== 1 ? 's' : ''}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      { flag: 'important_save', label: 'Important Save', Icon: Star },
+                      { flag: 'quest_item', label: 'Quest Item', Icon: Scroll },
+                      { flag: 'hideout_item', label: 'Hideout Item', Icon: Home },
+                      { flag: 'project_item', label: 'Project Item', Icon: Rocket },
+                      { flag: 'crafting_item', label: 'Crafting Item', Icon: Hammer },
+                    ].map(({ flag, label, Icon }) => {
+                      const isSelected = formData.item_flags?.includes(flag)
+                      const isAutoDetected = autoFlags.includes(flag)
+                      
+                      return (
+                        <button
+                          key={flag}
+                          type="button"
+                          onClick={() => toggleItemFlag(flag)}
+                          className={`p-3 rounded-lg border-2 transition-all text-left relative ${
+                            isSelected
+                              ? 'border-accent-500 bg-accent-50 text-accent-700'
+                              : isAutoDetected
+                              ? 'border-blue-300 bg-blue-50 text-blue-700'
+                              : 'border-primary-200 bg-white text-navy-700 hover:border-primary-300'
+                          }`}
+                        >
+                          {isAutoDetected && !isSelected && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white" title="Auto-detected" />
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Icon className="w-5 h-5" />
+                            <span className="text-sm font-medium">{label}</span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -406,9 +518,9 @@ const CustomItemForm = () => {
               disabled={createCustomItem.isPending || updateCustomItem.isPending}
             >
               <Save className="w-4 h-4 mr-2" />
-              {isEditMode ? 'Update' : 'Create'} Custom Item
+              {existingItem ? 'Update' : 'Save'} Item Data
             </Button>
-            <Link to="/admin/items">
+            <Link to="/admin/items-list">
               <Button type="button" variant="outline">
                 Cancel
               </Button>

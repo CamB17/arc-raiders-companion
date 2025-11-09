@@ -18,6 +18,7 @@ import ExpeditionTracker from './pages/ExpeditionTracker'
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard'
 import CustomItemsAdmin from './pages/admin/CustomItemsAdmin'
+import ItemsAdmin from './pages/admin/ItemsAdmin'
 import CustomItemForm from './pages/admin/CustomItemForm'
 import EventsAdmin from './pages/admin/EventsAdmin'
 import MapsAdmin from './pages/admin/MapsAdmin'
@@ -57,7 +58,8 @@ function App() {
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/items" element={<CustomItemsAdmin />} />
-        <Route path="/admin/items/:id" element={<CustomItemForm />} />
+        <Route path="/admin/items-list" element={<ItemsAdmin />} />
+        <Route path="/admin/items/:id/edit" element={<CustomItemForm />} />
         <Route path="/admin/traders" element={<CustomTradersAdmin />} />
         <Route path="/admin/traders/:id" element={<CustomTraderForm />} />
         <Route path="/admin/events" element={<EventsAdmin />} />

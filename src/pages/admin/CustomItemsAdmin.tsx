@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Package, Plus, Edit, Trash2, Search, ArrowLeft } from 'lucide-react'
+import { Package, Plus, Edit, Trash2, Search, ArrowLeft, Star } from 'lucide-react'
 import Card, { CardHeader, CardTitle, CardContent } from '@/components/Card'
 import Button from '@/components/Button'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -117,8 +117,9 @@ const CustomItemsAdmin = () => {
                           ID: {item.item_id}
                         </span>
                         {item.meta_rating && (
-                          <span className="text-sm text-accent-600 font-semibold">
-                            ⭐ {item.meta_rating}/5
+                          <span className="text-sm text-accent-600 font-semibold flex items-center gap-1">
+                            <Star className="w-4 h-4 fill-current" />
+                            {item.meta_rating}/5
                           </span>
                         )}
                       </div>

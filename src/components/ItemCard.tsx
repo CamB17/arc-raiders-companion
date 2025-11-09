@@ -1,8 +1,44 @@
 import { Link } from 'react-router-dom'
-import { Weight, Coins } from 'lucide-react'
+import { Weight, Coins, Star, Scroll, Home, Rocket, Hammer } from 'lucide-react'
 
 interface ItemCardProps {
   item: any
+  itemFlags?: string[]
+}
+
+// Flag icon mapping
+const getFlagIcon = (flag: string) => {
+  switch (flag) {
+    case 'important_save':
+      return <Star className="w-3.5 h-3.5" />
+    case 'quest_item':
+      return <Scroll className="w-3.5 h-3.5" />
+    case 'hideout_item':
+      return <Home className="w-3.5 h-3.5" />
+    case 'project_item':
+      return <Rocket className="w-3.5 h-3.5" />
+    case 'crafting_item':
+      return <Hammer className="w-3.5 h-3.5" />
+    default:
+      return null
+  }
+}
+
+const getFlagColor = (flag: string) => {
+  switch (flag) {
+    case 'important_save':
+      return 'text-yellow-500'
+    case 'quest_item':
+      return 'text-blue-500'
+    case 'hideout_item':
+      return 'text-green-500'
+    case 'project_item':
+      return 'text-purple-500'
+    case 'crafting_item':
+      return 'text-orange-500'
+    default:
+      return 'text-navy-600'
+  }
 }
 
 const getRarityStyles = (rarity?: string): { backgroundColor: string; color: string } => {
@@ -26,7 +62,7 @@ const getItemTypeColor = (type?: string) => {
   return 'bg-navy-600 text-white'
 }
 
-const ItemCard = ({ item }: ItemCardProps) => {
+const ItemCard = ({ item, itemFlags = [] }: ItemCardProps) => {
   // Extract stats from item - API uses stat_block
   const stats = item.stat_block || item.stats || {}
   const stackSize = stats.stackSize || item.stackSize
@@ -44,6 +80,24 @@ const ItemCard = ({ item }: ItemCardProps) => {
     >
       {/* Image Section - Transparent Background */}
       <div className="bg-transparent p-6 flex items-center justify-center h-48 relative">
+        {/* Item Flags Icons - Top Right */}
+        {itemFlags.length > 0 && (
+          <div className="absolute top-2 right-2 flex flex-wrap gap-1.5 justify-end z-10">
+            {itemFlags.map((flag) => {
+              const Icon = getFlagIcon(flag)
+              if (!Icon) return null
+              return (
+                <div
+                  key={flag}
+                  className={`${getFlagColor(flag)} bg-white/90 rounded-full p-1.5 shadow-sm`}
+                  title={flag.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                >
+                  {Icon}
+                </div>
+              )
+            })}
+          </div>
+        )}
         {itemImage ? (
           <img 
             src={itemImage} 
