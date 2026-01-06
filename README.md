@@ -2,8 +2,6 @@
 
 A comprehensive companion website for Arc Raiders players. Explore weapons, items, missions, crafting recipes, and more.
 
-![Arc Raiders Database](mockups/screenshot.png)
-
 ## Features
 
 - **Items Database** - Browse all weapons, gear, and resources with advanced filtering
