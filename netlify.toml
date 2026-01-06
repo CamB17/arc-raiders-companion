@@ -2,6 +2,14 @@
   publish = "dist"
   command = "npm run build"
 
+# Proxy Arc Raiders API to avoid CORS issues
+[[redirects]]
+  from = "/api/arc-raiders/*"
+  to = "https://metaforge.app/api/arc-raiders/:splat"
+  status = 200
+  force = true
+
+# SPA redirect (must be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"

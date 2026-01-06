@@ -1,11 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 
-// Use proxy in development to avoid CORS issues
-// In production, this will use the full URL
-const BASE_URL = import.meta.env.DEV 
-  ? '/api/arc-raiders'  // Proxy in development
-  : 'https://metaforge.app/api/arc-raiders'  // Direct in production
+// Always use proxy path to avoid CORS issues
+// Netlify will proxy /api/arc-raiders/* to metaforge.app
+const BASE_URL = '/api/arc-raiders'
 
 export interface ArcRaidersItem {
   id: string
