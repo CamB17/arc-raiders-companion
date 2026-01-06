@@ -6,50 +6,17 @@ A comprehensive companion website for Arc Raiders players. Explore weapons, item
 
 ## Features
 
-- 🎯 **Items Database** - Browse all weapons, gear, and resources with advanced filtering
-- 🎮 **Missions** - View all available missions, objectives, and rewards
-- 🔧 **Crafting System** - Discover crafting recipes and required materials
-- 🔍 **Search & Filter** - Find what you need quickly with powerful search
-- 📱 **Responsive Design** - Works beautifully on all devices
-- ⚡ **Fast & Modern** - Built with React, TypeScript, and Vite
+- **Items Database** - Browse all weapons, gear, and resources with advanced filtering
+- **Missions** - View all available missions, objectives, and rewards
+- **Crafting System** - Discover crafting recipes and required materials
+- **Search & Filter** - Find what you need quickly with powerful search
+
+## Coming Soon
+- **Interactive Maps** - View our interactive maps so you can navigate the top side a little bit easier.
 
 ## Data Source
 
-This application uses the [Metaforge API](https://metaforge.app/arc-raiders/api) to provide real-time, structured game data.
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ 
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/arc-raiders-companion.git
-cd arc-raiders-companion
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the development server:
-```bash
-npm run dev
-```
-
-4. Open your browser to `http://localhost:5173`
-
-### Build for Production
-
-```bash
-npm run build
-npm run preview
-```
+This application uses custom data inputed via my custom backend, stored on supabase.
 
 ## Tech Stack
 
@@ -61,58 +28,13 @@ npm run preview
 - **HTTP Client**: Axios
 - **Icons**: Lucide React
 
-## Project Structure
-
-```
-arc-raiders-companion/
-├── src/
-│   ├── components/       # Reusable UI components
-│   │   ├── Header.tsx
-│   │   ├── Footer.tsx
-│   │   ├── Layout.tsx
-│   │   ├── Button.tsx
-│   │   ├── Card.tsx
-│   │   └── ...
-│   ├── pages/           # Page components
-│   │   ├── Home.tsx
-│   │   ├── Items.tsx
-│   │   ├── ItemDetail.tsx
-│   │   ├── Missions.tsx
-│   │   └── Crafting.tsx
-│   ├── hooks/           # Custom React hooks
-│   │   └── useArcRaidersApi.ts
-│   ├── lib/             # Utility functions
-│   │   └── utils.ts
-│   ├── App.tsx          # Main app component
-│   ├── main.tsx         # Entry point
-│   └── index.css        # Global styles
-├── public/              # Static assets
-├── index.html           # HTML template
-└── package.json         # Dependencies
-```
-
-## API Endpoints
-
-The app fetches data from these Metaforge API endpoints:
-
-- `/items` - All items in the game
-- `/items/:id` - Individual item details
-- `/missions` - All missions
-- `/recipes` - Crafting recipes
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## License
 
 This project is not affiliated with or endorsed by Embark Studios. Arc Raiders is a trademark of Embark Studios AB.
 
 ## Acknowledgments
 
-- Data provided by [Metaforge](https://metaforge.app/arc-raiders)
-- Built with modern web technologies
-- Inspired by the Arc Raiders community
+- Inspired by the Arc Raiders community and MetaForge
 
 ## Support
 
