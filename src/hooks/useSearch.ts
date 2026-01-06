@@ -77,17 +77,6 @@ export const useSearch = (query: string, enabled: boolean = true) => {
       return []
     }
     
-    // Debug logging in development
-    if (process.env.NODE_ENV === 'development' && responseData) {
-      console.log(`[Search] Normalizing ${endpoint} response:`, {
-        hasData: !!responseData.data,
-        isArray: Array.isArray(responseData),
-        isDataArray: Array.isArray(responseData.data),
-        isObject: typeof responseData.data === 'object' && !Array.isArray(responseData.data),
-        keys: Object.keys(responseData),
-      })
-    }
-    
     // Handle traders endpoint special case - API returns object mapping trader names to items
     if (endpoint === 'traders' && responseData.data && typeof responseData.data === 'object' && !Array.isArray(responseData.data)) {
       // Convert object to array of traders
@@ -183,24 +172,6 @@ export const useSearch = (query: string, enabled: boolean = true) => {
   
   const isLoading = itemsQuery.isLoading || questsQuery.isLoading || enemiesQuery.isLoading || tradersQuery.isLoading
   const isError = itemsQuery.isError || questsQuery.isError || enemiesQuery.isError || tradersQuery.isError
-  
-  // Debug logging in development
-  if (process.env.NODE_ENV === 'development' && searchQuery.length >= 2) {
-    console.log('[Search] Results summary:', {
-      query: searchQuery,
-      isLoading,
-      isError,
-      total: results.total,
-      items: results.items.length,
-      quests: results.quests.length,
-      enemies: results.enemies.length,
-      traders: results.traders.length,
-      itemsData: itemsQuery.data ? 'has data' : 'no data',
-      questsData: questsQuery.data ? 'has data' : 'no data',
-      enemiesData: enemiesQuery.data ? 'has data' : 'no data',
-      tradersData: tradersQuery.data ? 'has data' : 'no data',
-    })
-  }
   
   return {
     results,

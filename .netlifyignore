@@ -1,0 +1,21 @@
+# Documentation
+docs/
+
+# Database files
+database/
+
+# Development files
+mockups/
+
+# Build artifacts not needed
+node_modules/
+src/
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+
+# Logs
+*.log
+

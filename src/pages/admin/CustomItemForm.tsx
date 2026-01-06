@@ -64,29 +64,17 @@ const CustomItemForm = () => {
     }
 
     try {
-      console.log('Attempting to save custom item with data:', formData)
-      
       if (existingItem?.id) {
-        // Update existing custom item
         await updateCustomItem.mutateAsync({
           id: existingItem.id,
           updates: formData,
         })
-        console.log('✓ Successfully updated custom item')
       } else {
-        // Create new custom item
         await createCustomItem.mutateAsync(formData)
-        console.log('✓ Successfully created custom item')
       }
       navigate('/admin/items-list')
     } catch (error: any) {
-      console.error('✗ Failed to save custom item:', error)
-      console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-      })
+      console.error('Failed to save custom item:', error)
       
       // Show detailed error message
       let errorMessage = 'Failed to save custom item.\n\n'

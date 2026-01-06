@@ -10,21 +10,6 @@ const Crafting = () => {
     : recipesResponse?.data || []
   const pagination = !Array.isArray(recipesResponse) ? recipesResponse?.pagination : null
   
-  // Debug logging to see what data we're getting - ONLY FIRST RECIPE
-  if (recipes.length > 0 && process.env.NODE_ENV === 'development') {
-    const firstRecipe = recipes[0]
-    if (firstRecipe) {
-      console.log('🔍 FIRST RECIPE:', firstRecipe.name)
-      console.log('🔍 Has components?', !!firstRecipe.components, 'Count:', firstRecipe.components?.length || 0)
-      console.log('🔍 Has requires?', !!firstRecipe.requires, 'Count:', firstRecipe.requires?.length || 0)
-      
-      const firstComponent = firstRecipe.components?.[0]
-      if (firstComponent) {
-        console.log('🔍 First component in recipe:', firstComponent)
-      }
-    }
-  }
-  
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

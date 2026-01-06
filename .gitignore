@@ -39,3 +39,10 @@ coverage
 
 # Misc
 .cache
+
+# Documentation (not for deployment)
+docs/
+database/
+
+# Cursor
+.cursor

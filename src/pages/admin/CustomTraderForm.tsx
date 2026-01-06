@@ -54,25 +54,21 @@ const CustomTraderForm = () => {
 
     try {
       if (existingCustomTrader?.id) {
-        // Update existing custom trader
         await updateCustomTrader.mutateAsync({
           id: existingCustomTrader.id,
           updates: {
             custom_image: formData.custom_image || undefined,
           },
         })
-        console.log('✓ Successfully updated custom trader image')
       } else {
-        // Create new custom trader record
         await createCustomTrader.mutateAsync({
           trader_id: formData.trader_id,
           custom_image: formData.custom_image || undefined,
         })
-        console.log('✓ Successfully created custom trader image')
       }
       navigate('/admin/traders')
     } catch (error: any) {
-      console.error('✗ Failed to save custom trader:', error)
+      console.error('Failed to save custom trader:', error)
       alert(`Failed to save custom trader image: ${error.message || 'Unknown error'}`)
     }
   }

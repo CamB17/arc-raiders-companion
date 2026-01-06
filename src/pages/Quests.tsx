@@ -48,20 +48,6 @@ const Quests = () => {
   // Link quests to traders
   const allQuests = response?.data ? linkQuestsToTraders(response.data, traders) : []
   
-  // DEBUG: Log first quest to see all available fields
-  if (allQuests.length > 0 && !isLoading) {
-    console.log('=== QUEST API DATA STRUCTURE ===')
-    console.log('First quest full data:', allQuests[0])
-    console.log('Quest keys:', Object.keys(allQuests[0]))
-    if (allQuests[0].rewards && allQuests[0].rewards.length > 0) {
-      console.log('First reward full data:', allQuests[0].rewards[0])
-      if (typeof allQuests[0].rewards[0] === 'object') {
-        console.log('Reward keys:', Object.keys(allQuests[0].rewards[0]))
-      }
-    }
-    console.log('=== END QUEST API DATA ===')
-  }
-  
   // State for search and filters
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedType, setSelectedType] = useState<string>('all')
@@ -150,8 +136,6 @@ const Quests = () => {
   const sortedQuests = useMemo(() => {
     const sorted = [...filteredQuests]
     
-    console.log(`Sorting ${sorted.length} quests by: ${sortBy}`)
-    
     switch (sortBy) {
       case 'xp-high':
         sorted.sort((a, b) => {
@@ -159,7 +143,6 @@ const Quests = () => {
           const bXP = getQuestXP(b)
           return bXP - aXP
         })
-        console.log('Top 5 quests by XP:', sorted.slice(0, 5).map(q => ({ name: q.name, xp: getQuestXP(q) })))
         return sorted
       case 'xp-low':
         sorted.sort((a, b) => {
@@ -174,7 +157,6 @@ const Quests = () => {
           const bCount = getQuestRewardCount(b)
           return bCount - aCount
         })
-        console.log('Top 5 quests by reward count:', sorted.slice(0, 5).map(q => ({ name: q.name, count: getQuestRewardCount(q) })))
         return sorted
       case 'reward-count-low':
         sorted.sort((a, b) => {

@@ -435,7 +435,6 @@ export const useArcRaidersData = <T = any>(
         
         // If we get data, return it
         if (response.data) {
-          console.log(`✓ Successfully fetched from: ${BASE_URL}/${endpoint}`)
           return response.data
         }
         
@@ -482,8 +481,6 @@ export const useItems = (params?: ItemsQueryParams & { fetchAll?: boolean }) => 
           
           // If fetchAll is true and there are more pages, fetch all pages
           if (fetchAll && pagination && pagination.hasNextPage && pagination.totalPages > 1) {
-            console.log(`📄 Fetching all pages: ${pagination.totalPages} total pages`)
-            
             // Fetch remaining pages in parallel
             const pagePromises: Promise<any>[] = []
             for (let page = 2; page <= pagination.totalPages; page++) {
@@ -514,8 +511,6 @@ export const useItems = (params?: ItemsQueryParams & { fetchAll?: boolean }) => 
               }
             })
             
-            console.log(`✓ Successfully fetched ${allItems.length} items across ${pagination.totalPages} pages`)
-            
             return {
               data: allItems,
               pagination: {
@@ -529,7 +524,6 @@ export const useItems = (params?: ItemsQueryParams & { fetchAll?: boolean }) => 
             }
           }
           
-          console.log(`✓ Successfully fetched ${items.length} items`)
           return response.data
         }
         
@@ -537,7 +531,6 @@ export const useItems = (params?: ItemsQueryParams & { fetchAll?: boolean }) => 
       } catch (error: any) {
         // If the request fails with a high limit, try with lower limit and pagination
         if (fetchAll && defaultParams.limit && defaultParams.limit > 100) {
-          console.log(`⚠ High limit request failed, trying with pagination...`)
           try {
             // Fetch first page with smaller limit
             const firstResponse = await axios.get(`${BASE_URL}/items`, {
@@ -557,8 +550,6 @@ export const useItems = (params?: ItemsQueryParams & { fetchAll?: boolean }) => 
               const firstPagination = firstResponse.data.pagination
               
               if (firstPagination && firstPagination.hasNextPage && firstPagination.totalPages > 1) {
-                console.log(`📄 Fetching all pages with pagination: ${firstPagination.totalPages} total pages`)
-                
                 // Fetch remaining pages
                 const pagePromises: Promise<any>[] = []
                 for (let page = 2; page <= firstPagination.totalPages; page++) {
@@ -587,8 +578,6 @@ export const useItems = (params?: ItemsQueryParams & { fetchAll?: boolean }) => 
                     allItems.push(...pageResponse.data.data)
                   }
                 })
-                
-                console.log(`✓ Successfully fetched ${allItems.length} items across ${firstPagination.totalPages} pages`)
                 
                 return {
                   data: allItems,
@@ -635,7 +624,6 @@ export const useItem = (id: string) => {
         })
         
         if (response.data?.data?.[0]) {
-          console.log(`✓ Successfully fetched item: ${id}`)
           return response.data.data[0]
         }
         
@@ -676,7 +664,6 @@ export const useRecipes = (params?: {
         if (response.data) {
           // Handle paginated response
           if (response.data.data && response.data.pagination) {
-            console.log(`✓ Successfully fetched ${response.data.data.length} recipes from recipes endpoint`)
             // Ensure all recipes have components array populated from requires
             const normalizedRecipes = response.data.data.map((recipe: any) => {
               // If recipe has requires but no components, normalize components array
@@ -703,7 +690,6 @@ export const useRecipes = (params?: {
           }
           // Handle array response
           if (Array.isArray(response.data)) {
-            console.log(`✓ Successfully fetched ${response.data.length} recipes from recipes endpoint`)
             // Ensure all recipes have components array populated from requires
             const normalizedRecipes = response.data.map((recipe: any) => {
               // If recipe has requires but no components, normalize components array
@@ -751,7 +737,6 @@ export const useRecipes = (params?: {
       } catch (recipesError) {
         // If recipes endpoint fails, try getting craftable items from items endpoint
         try {
-          console.log('⚠ Recipes endpoint not available, fetching craftable items...')
           const itemsResponse = await axios.get(`${BASE_URL}/items`, {
             params: {
               page: params?.page || 1,
@@ -789,16 +774,6 @@ export const useRecipes = (params?: {
                        (item.crafting?.requires && item.crafting.requires.length > 0)
               })
               .map((item: ArcRaidersItem): ArcRaidersRecipe => {
-                // Debug logging for ONLY the first item to see structure
-                const isFirstItem = items.indexOf(item) === 0
-                if (process.env.NODE_ENV === 'development' && isFirstItem) {
-                  console.log('🔍 FIRST CRAFTABLE ITEM:', item.name)
-                  console.log('🔍 Item components array length:', item.components?.length || 0)
-                  if (item.components && item.components.length > 0) {
-                    console.log('🔍 First component RAW from API:', item.components[0])
-                  }
-                }
-                
                 // Create a lookup map of all items by ID for resolving component names
                 const itemsById = new Map<string, ArcRaidersItem>()
                 items.forEach(i => {
@@ -823,13 +798,6 @@ export const useRecipes = (params?: {
                   // If item is a string, use it
                   if (!itemId && typeof comp.item === 'string' && comp.item !== 'Unknown Material') {
                     itemId = comp.item
-                  }
-                  
-                  // Debug log to see what we're trying to resolve
-                  if (process.env.NODE_ENV === 'development' && !itemId) {
-                    console.warn('🔍 Could not find item_id in component.')
-                    console.warn('🔍 All field names:', Object.keys(comp))
-                    console.warn('🔍 All field values:', Object.entries(comp))
                   }
                   
                   if (itemId && typeof itemId === 'string') {
@@ -882,15 +850,6 @@ export const useRecipes = (params?: {
                   requires = item.components.map(comp => {
                     const componentName = resolveComponentName(comp)
                     const componentId = resolveComponentId(comp)
-                    
-                    // Debug log ONLY for first component of first item
-                    if (process.env.NODE_ENV === 'development' && isFirstItem && item.components?.indexOf(comp) === 0) {
-                      console.log('🔍 Resolved first component:', {
-                        originalComponent: comp,
-                        resolvedName: componentName,
-                        resolvedId: componentId,
-                      })
-                    }
                     
                     // Get image - check nested item object too
                     let componentImage = comp.image || comp.imageUrl || comp.image_url || comp.icon || comp.thumbnail
@@ -988,8 +947,6 @@ export const useRecipes = (params?: {
               })
             
             if (recipes.length > 0) {
-              console.log(`✓ Successfully converted ${recipes.length} craftable items to recipes`)
-              
               // If we had pagination, return paginated format
               if (pagination) {
                 return {

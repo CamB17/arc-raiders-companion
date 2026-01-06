@@ -55,12 +55,6 @@ const EnemyCard = ({ enemy }: EnemyCardProps) => {
               e.currentTarget.style.display = 'none'
               e.currentTarget.parentElement!.querySelector('.fallback-icon')?.classList.remove('hidden')
             }}
-            onLoad={() => {
-              // Log successful image load for debugging
-              if (import.meta.env.DEV) {
-                console.log(`✓ Loaded image for ${enemy.name}`)
-              }
-            }}
           />
         ) : null}
         <div className={`fallback-icon w-24 h-24 bg-white/30 rounded-lg flex items-center justify-center ${enemyImage ? 'hidden' : ''}`}>

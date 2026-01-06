@@ -73,9 +73,6 @@ export const useMergedItem = (item?: ArcRaidersItem): EnhancedItem | undefined =
  * @returns Array of enhanced items with custom data
  */
 export const useMergedItems = (items?: ArcRaidersItem[]): EnhancedItem[] => {
-  // Note: This doesn't fetch all custom data at once for performance
-  // Each item's custom data is fetched on-demand
-  // For a list view, you might want to fetch all custom data first
   return useMemo(() => {
     if (!items) return []
     return items.map((item) => ({ ...item } as EnhancedItem))
@@ -204,9 +201,6 @@ export const useMergedTrader = (trader?: ArcRaidersTrader): EnhancedTrader | und
  * @returns Array of enhanced traders with custom data
  */
 export const useMergedTraders = (traders?: ArcRaidersTrader[]): EnhancedTrader[] => {
-  // Note: This doesn't fetch all custom data at once for performance
-  // Each trader's custom data is fetched on-demand
-  // For a list view, you might want to fetch all custom data first
   return useMemo(() => {
     if (!traders) return []
     return traders.map((trader) => ({ ...trader } as EnhancedTrader))

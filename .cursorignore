@@ -1,0 +1,27 @@
+# Build outputs
+dist/
+dist-ssr/
+node_modules/
+
+# Documentation
+*.md
+!README.md
+
+# SQL files
+*.sql
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+
+# Environment
+.env
+.env.*
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+

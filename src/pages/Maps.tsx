@@ -70,25 +70,26 @@ const Maps = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {activeMaps.map((map) => (
-            <Link key={map.id} to={`/maps/${map.map_id}`}>
-              <Card hover className="h-full transition-all hover:border-accent-400">
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-accent-100 rounded-lg flex items-center justify-center">
-                        <MapPin className="w-6 h-6 text-accent-600" />
+            <div key={map.id} className="relative">
+              <Link to={`/maps/${map.map_id}`}>
+                <Card hover className="h-full transition-all hover:border-accent-400">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-accent-100 rounded-lg flex items-center justify-center">
+                          <MapPin className="w-6 h-6 text-accent-600" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-xl">{map.name}</CardTitle>
+                          <p className="text-sm text-navy-600 mt-1">
+                            {map.map_id}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-xl">{map.name}</CardTitle>
-                        <p className="text-sm text-navy-600 mt-1">
-                          {map.map_id}
-                        </p>
-                      </div>
+                      <ArrowRight className="w-5 h-5 text-navy-400" />
                     </div>
-                    <ArrowRight className="w-5 h-5 text-navy-400" />
-                  </div>
-                </CardHeader>
-                <CardContent>
+                  </CardHeader>
+                  <CardContent>
                   {map.description && (
                     <p className="text-navy-600 mb-4 line-clamp-2">
                       {map.description}
@@ -128,7 +129,15 @@ const Maps = () => {
                   </div>
                 </CardContent>
               </Card>
-            </Link>
+              </Link>
+              
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center pointer-events-none">
+                <div className="text-center">
+                  <p className="text-2xl font-techno font-bold text-navy-800">Coming Soon</p>
+                  <p className="text-sm text-navy-600 mt-1">Interactive maps in development</p>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </div>

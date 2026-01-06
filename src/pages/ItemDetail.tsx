@@ -138,33 +138,11 @@ const ItemDetail = () => {
       // Match if they have the same base name (case-insensitive, trimmed)
       const matches = normalizedOtherBaseName === normalizedBaseName
       
-      // Debug logging for hullcracker items
-      if (normalizedBaseName.includes('hullcracker') || normalizedOtherBaseName.includes('hullcracker')) {
-        console.log('Variant matching:', {
-          currentItem: itemName,
-          currentBase: normalizedBaseName,
-          otherItem: otherName,
-          otherBase: normalizedOtherBaseName,
-          matches,
-          currentHasVariant: hasVariantNumber(itemName),
-          otherHasVariant: hasVariantNumber(otherName)
-        })
-      }
-      
       return matches
     })
     
     // Only show if we found 2+ variants (including current item)
     if (variants.length < 2) {
-      // Debug logging
-      if (normalizedBaseName.includes('hullcracker')) {
-        console.log('Not enough variants found:', {
-          baseName: normalizedBaseName,
-          variantsFound: variants.length,
-          variantNames: variants.map((v: any) => v.name),
-          allItemNames: allItems.filter((i: any) => i.name?.toLowerCase().includes('hullcracker')).map((i: any) => i.name)
-        })
-      }
       return []
     }
     
@@ -267,28 +245,12 @@ const ItemDetail = () => {
   // Get crafting materials - prioritize components from API
   const neededToCraft = item.components || item.crafting?.requires || item.requiredMaterials || []
   
-  // Debug logging to see component structure
-  if (neededToCraft.length > 0) {
-    console.log('Crafting components:', neededToCraft)
-    neededToCraft.forEach((comp: any, idx: number) => {
-      console.log(`Component ${idx}:`, comp)
-    })
-  }
-  
   const crafting = item.crafting || {}
   const traders = item.traders || item.soldByTraders || []
   
   // Get recycle breakdown - check multiple possible field names
   // API uses 'recycle_components' field
   const recycleBreakdown = item.recycle_components || item.recycle_breakdown || item.recycleBreakdown || item.recycle?.breakdown || item.recycle?.components || []
-  
-  // Debug log to see the structure
-  if (recycleBreakdown.length > 0) {
-    console.log('Recycle breakdown items:', recycleBreakdown)
-    recycleBreakdown.forEach((item: any, idx: number) => {
-      console.log(`Breakdown item ${idx}:`, item)
-    })
-  }
   
   const breakdownTotal = recycleBreakdown.reduce((sum: number, item: any) => {
     const itemValue = item.value || 0
@@ -972,11 +934,6 @@ const ItemDetail = () => {
                         const materialQuantity = material.quantity || material.count || material.amount || 1
                         const materialType = material.item_type || material.type || material.component?.item_type || 'Material'
                         
-                        // Debug logging if name or image is missing
-                        if (!materialName || materialName === 'Unknown Material' || !materialImage) {
-                          console.log('Crafting component structure:', material)
-                        }
-                        
                         // Get item ID for linking
                         const materialId = material.item_id 
                           || material.item 
@@ -1156,11 +1113,6 @@ const ItemDetail = () => {
                           const itemValue = breakdownItem.value || breakdownItem.price || 0
                           const totalValue = itemValue * quantity
                           const itemId = getItemIdFromBreakdown(breakdownItem)
-                          
-                          // Debug log to see what we're working with
-                          if (!itemName || itemName === 'Unknown Item') {
-                            console.log('Breakdown item structure:', breakdownItem)
-                          }
                           
                           const handleMouseEnter = (e: React.MouseEvent) => {
                             if (itemId) {

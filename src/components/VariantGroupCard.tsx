@@ -224,16 +224,6 @@ const VariantGroupCard = ({ items, baseName }: VariantGroupCardProps) => {
             const isSelected = index === selectedVariantIndex
             const variantRarity = item.rarity
             
-            // Debug logging for hullcracker items
-            if ((item.name || '').toLowerCase().includes('hullcracker')) {
-              console.log('VariantGroupCard - variant info:', {
-                itemName: item.name,
-                variantInfo,
-                index,
-                displayText: variantInfo.displayVariant || variantInfo.variantNumber || `#${index + 1}`
-              })
-            }
-            
             // Determine what to display
             let displayText = variantInfo.displayVariant || variantInfo.variantNumber
             if (!displayText && variantInfo.sortOrder > 0) {
