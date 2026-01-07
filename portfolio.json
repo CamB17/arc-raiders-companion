@@ -1,0 +1,33 @@
+{
+  "title": "Arc Raiders Companion",
+  "summary": "A comprehensive companion web application for Arc Raiders players featuring a searchable database of 1,000+ in-game items, weapons, and gear with real-time data. Includes hideout management, crafting recipes, quest tracking, and trader information.",
+  "description": "Full-stack game companion app combining real-time API data with custom CMS for community enhancements. Features advanced filtering, progress tracking, and interactive maps.",
+  "year": "2025",
+  "liveUrl": "https://speranzacompanion.netlify.app",
+  "githubUrl": "https://github.com/CamB17/arc-raiders-companion",
+  "screenshot": "https://raw.githubusercontent.com/CamB17/arc-raiders-companion/main/screenshots/homepage.png",
+  "screenshots": [
+    "https://raw.githubusercontent.com/CamB17/arc-raiders-companion/main/screenshots/homepage.png",
+    "https://raw.githubusercontent.com/CamB17/arc-raiders-companion/main/screenshots/crafting-page.png"
+  ],
+  "tags": ["REACT", "TYPESCRIPT", "VITE", "SUPABASE", "TAILWIND"],
+  "techStack": [
+    "React 18",
+    "TypeScript",
+    "Vite",
+    "Supabase (PostgreSQL)",
+    "TanStack Query",
+    "TailwindCSS",
+    "React Router",
+    "Framer Motion"
+  ],
+  "features": [
+    "Real-time game data integration via REST API",
+    "Advanced search and filtering across 1,000+ items",
+    "Progress tracking for hideout upgrades and expeditions",
+    "Custom CMS admin panel for content management",
+    "Interactive maps with POI markers (in development)",
+    "Responsive design with modern UI/UX"
+  ],
+  "featured": true
+}
